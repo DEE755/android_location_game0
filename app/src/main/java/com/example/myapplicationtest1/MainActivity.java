@@ -50,8 +50,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-
-
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -297,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
+        //this is a simmple change
 
 
         // Handle button click
