@@ -1,3 +1,4 @@
+
 mmplugins {
     alias(libs.plugins.android.application)
 }
