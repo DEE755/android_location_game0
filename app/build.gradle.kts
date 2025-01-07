@@ -1,7 +1,7 @@
-plugins {
+mmplugins {
     alias(libs.plugins.android.application)
 }
-
+//chanes
 android {
     namespace = "com.example.myapplicationtest1"
     compileSdk = 34
@@ -35,7 +35,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
@@ -46,11 +45,7 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("org.osmdroid:osmdroid-android:6.1.13")
-    implementation ("org.osmdroid:osmdroid-android:6.1.2")
     implementation("com.opencsv:opencsv:5.7.1")
-
-
-
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
