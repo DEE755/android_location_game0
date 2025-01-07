@@ -57,19 +57,8 @@ import android.media.AudioTrack;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-
-class DistanceCalculator {
-
-    private static final double EARTH_RADIUS = 6371000; // Earth's radius in meters
-
-    /**
-     * Calculates the distance between two geographical points using the haversine formula.
-     *
-     * @param point1 The first geographical point.
-     * @param point2 The second geographical point.
-     * @return The distance in meters.
-     */
-    public static int calculateDistance(GeoPoint point1, GeoPoint point2) {
+//////// #Bear was hear f#$%$#%k all of you
+Distance(GeoPoint point1, GeoPoint point2) {
         double lat1 = Math.toRadians(point1.getLatitude());
         double lon1 = Math.toRadians(point1.getLongitude());
         double lat2 = Math.toRadians(point2.getLatitude());
