@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "51208993076",
+    "project_id": "android-location-game0",
+    "storage_bucket": "android-location-game0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:51208993076:android:f48d8310709e7693934d61",
+        "android_client_info": {
+          "package_name": "com.example.myapplicationtest1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwWSem52C6SNa9iaiBjzLIX3XixJVrTLg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
