@@ -23,13 +23,14 @@ import com.example.myapplicationtest1.databinding.ActivityMainBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-
+//OSM
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -58,89 +59,17 @@ import android.media.AudioTrack;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-class DistanceCalculator {
-
-    private static final double EARTH_RADIUS = 6371000; // Earth's radius in meters
-
-    /**
-     * Calculates the distance between two geographical points using the haversine formula.
-     *
-     * @param point1 The first geographical point.
-     * @param point2 The second geographical point.
-     * @return The distance in meters.
-     */
-    public static int calculateDistance(GeoPoint point1, GeoPoint point2) {
-        double lat1 = Math.toRadians(point1.getLatitude());
-        double lon1 = Math.toRadians(point1.getLongitude());
-        double lat2 = Math.toRadians(point2.getLatitude());
-        double lon2 = Math.toRadians(point2.getLongitude());
-
-        double deltaLat = lat2 - lat1;
-        double deltaLon = lon2 - lon1;
-
-        double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                        Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return (int)(EARTH_RADIUS * c);
-    }
+//FIREBASE:
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 
-}
-class ToneGenerator {
 
 
-    public void toneGenerator(float startFreq, float endFreq, int nbOfSeconds) {
-        final int sampleRate = 44100; // Standard audio sample rate
-        int numSamples = nbOfSeconds * sampleRate; // Total samples for the duration
-        double[] sample = new double[numSamples]; // Array to hold sample data
-        byte[] generatedSound = new byte[2 * numSamples]; // Output buffer for audio
-        new Thread(() -> {
-        // Generate the tone samples
-        for (int i = 0; i < numSamples; ++i) {
-            double currentFreq = startFreq + ((endFreq - startFreq) * i / numSamples); // Linear interpolation
-            sample[i] = Math.sin(2 * Math.PI * i * currentFreq / sampleRate); // Sine wave calculation
-        }
 
-        // Convert to 16-bit PCM format
-        int index = 0;
-        for (final double value : sample) {
-            // Scale to max amplitude for 16-bit PCM
-            final short val = (short) ((value * 32767));
-            // Little-endian format: LSB first
-            generatedSound[index++] = (byte) (val & 0x00ff);
-            generatedSound[index++] = (byte) ((val & 0xff00) >>> 8);
-        }
 
-        // Play the tone using AudioTrack
-        AudioTrack audioTrack = new AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                generatedSound.length,
-                AudioTrack.MODE_STATIC
-        );
+//SOUND
 
-        audioTrack.write(generatedSound, 0, generatedSound.length);
-        audioTrack.play();
-
-        // Wait for the tone to finish
-        try {
-            Thread.sleep(nbOfSeconds * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-
-        }
-
-        // Release the AudioTrack resources
-        audioTrack.stop();
-        audioTrack.release();
-    }).start();
-    };
-}
 
 
 
@@ -199,9 +128,12 @@ public class MainActivity extends AppCompatActivity {
 
     private double zoom_speed=1000L;
 
-    //GpsMyLocationProvider myloc=new GpsMyLocationProvider();//make crash
 
-    //GeoPoint mylocgeo= new GeoPoint(myloc.getLastKnownLocation().getLatitude(), myloc.getLastKnownLocation().getLongitude());
+    //private FirebaseAnalytics mFirebaseAnalytics;
+
+    private DatabaseReference mDatabase;
+
+
 
     private void readCsvFile(InputStream inputStream) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -289,19 +221,21 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+        //initialize database:
+        mDatabase = FirebaseDatabase.getInstance("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app").getReference();
+
         // Set button initially disabled until location is fetched
         playsoundButton.setEnabled(false);
         playsoundButton.setText("Fetching Location...");
 
 
 
-        //this is a simmple change
-
 
         // Handle button click
         playsoundButton.setOnClickListener(v -> {
            // if (mediaPlayer != null) {
                 //mediaPlayer.start();}
+            mDatabase.child("users").child("user1").setValue("Juan Carlos");
 
                 ToneGenerator Tonegen=new ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
@@ -337,7 +271,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-
+                //ANALYTICS:
+            //mFirebaseAnalytics.logEvent("button_clickj", null);
         });
 
 
@@ -366,35 +301,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         show_current_position(9.0,1000L);
-
-
-        //random Lat & Long:
-
-// Define the geographic point for the marker
-       // GeoPoint point = new GeoPoint(32.0148, 34.7767);
-
-// Create a new Marker object
-        // Marker marker = new Marker(map);
-
-// Set the position of the marker
-       // marker.setPosition(point);
-
-// Optionally, set a title for the marker
-       // marker.setTitle("a first point in Holon");
-
-// Optionally, set an icon for the marker
-// marker.setIcon(getResources().getDrawable(R.drawable.marker_icon));
-
-// Optionally, set the anchor point of the marker
-// marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-
-// Add the marker to the map's overlay
-       // map.getOverlays().add(marker);
-
-// Refresh the map to display the marker
-        //map.invalidate();
-
-
 
 
 
@@ -524,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void createMarkers(InputStream inputStream)
+    private void createMarkers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
     {
 
 
@@ -580,7 +486,7 @@ public class MainActivity extends AppCompatActivity {
                 // Customize marker title
                 temp_marker.setTitle(
                         "Bus Station " + (i + 1) + " " + values[3] +
-                                "\nDistance from me (check if live?): " + distanceInMeters + 0 + " meters"
+                                "\nDistance from me : " + distanceInMeters + 0 + " meters"
                 );
 
                 temp_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
@@ -623,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
     {int distance, min_distance=9999999;
         for(Marker marker : markerList ){
             distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), marker.getPosition());
-
+//test
             if (distance<min_distance)
             {
                 min_distance=distance;

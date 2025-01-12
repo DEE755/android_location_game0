@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
+    //id("com.android.library")
 }
 
 android {
@@ -48,6 +50,18 @@ dependencies {
     implementation("org.osmdroid:osmdroid-android:6.1.13")
     implementation ("org.osmdroid:osmdroid-android:6.1.2")
     implementation("com.opencsv:opencsv:5.7.1")
+
+
+    //FIREBASE:
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    //AUTHENTIFICATION:
+    implementation("com.google.firebase:firebase-auth")
+    //REALTIME DATABASE:
+    implementation ("com.google.firebase:firebase-database")
+
+
+
 
 
 

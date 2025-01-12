@@ -45,6 +45,13 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
 
+
+
+
+
+
+
+
     <org.osmdroid.views.MapView
     android:id="@+id/map"
     android:layout_width="0dp"
@@ -53,6 +60,9 @@
     app:layout_constraintBottom_toTopOf="@+id/nav_view"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent" />
+
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
