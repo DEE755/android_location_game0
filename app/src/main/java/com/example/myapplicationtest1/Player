@@ -1,0 +1,81 @@
+public class Player
+{
+    private String name; // Player's name
+    private double latitude; // Current latitude of the player
+    private double longitude; // Current longitude of the player
+    private int currentScore; // Player's current score
+
+    // Constructor
+    public Player(String name, double latitude, double longitude)
+    {
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.currentScore = 0; // Default score is 0
+    }
+
+    // Getter and Setter for Name
+    public String getName()
+    {
+        return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    // Getter and Setter for Latitude
+    public double getLatitude()
+    {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude)
+    {
+        this.latitude = latitude;
+    }
+
+    // Getter and Setter for Longitude
+    public double getLongitude()
+    {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude)
+    {
+        this.longitude = longitude;
+    }
+
+    // Getter and Setter for Current Score
+    public int getCurrentScore() {
+        return currentScore;
+    }
+
+    public void setCurrentScore(int currentScore) {
+        this.currentScore = currentScore;
+    }
+
+    // Update the player's location
+    public void updateLocation(double latitude, double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
+    // Add points to the player's score
+    public void addScore(int points) {
+        this.currentScore += points;
+    }
+
+    // Display player info
+    @Override
+    public String toString()
+    {
+        return "Player{" +
+                "name='" + name + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", currentScore=" + currentScore +
+                '}';
+    }
+}
