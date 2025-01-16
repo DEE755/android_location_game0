@@ -22,8 +22,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.myapplicationtest1.databinding.ActivityMainBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.analytics.FirebaseAnalytics;
 
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -31,6 +32,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 //OSM
+import org.apache.commons.logging.LogFactory;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -51,21 +53,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
-
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+
+
 //FIREBASE:
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-
-
-
-
 
 
 //SOUND
@@ -76,6 +69,7 @@ import com.google.firebase.database.FirebaseDatabase;
 public class MainActivity extends AppCompatActivity {
 
 
+    private static final org.apache.commons.logging.Log log = LogFactory.getLog(MainActivity.class);
 
     // Inner class to hold location data
     public class LocationData {
@@ -92,11 +86,19 @@ public class MainActivity extends AppCompatActivity {
         public double getLongitude() { return longitude; }
     }
 
+    //CALLBACKS FOR ASYNCHRONOUS OPERATIONS:
+
     // Callback interface for location results
     public interface MyLocationCallback {
         void onLocationResult(LocationData locationData);
         void onError(String errorMsg);
     }
+
+    //callback for results from server:
+    public interface ValueCallback<T> {
+        void onValueReceived(T value);
+    }
+
 
     private ActivityMainBinding binding;
     private FusedLocationProviderClient fusedLocationClient;
@@ -128,10 +130,48 @@ public class MainActivity extends AppCompatActivity {
 
     private double zoom_speed=1000L;
 
+    private int current_iteration=0;
+
+    private Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
+
+    private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il"); //this is the 'client' player (the device owner)
+
+
+
+    //TEST PLAYERS:
+
+
+    private Player Michael_Jackson_player =new Player("Michael Jackson",31,27,"mjmusic@sony.com");
+
+    private Player Spiderman_player =new Player("Peter Parker",34,28,"peter_parker@gmail.com");
+
+    private Player Batman_player =new Player("Bruce Wayne",33,29,"bruce-wayne@ghotam.com");
+
+    private Player Superman_player =new Player("Clark Kent",32,30,"Clark-Kent@dc.com");
+
+    private Player Harry_Potter_player =new Player("Harry Potter",22,2,"hp@hogwart.uk");
+
+    private Player Mary_Poppins_player =new Player("Mary Poppins",23,3,"marry_popping@londonmagicservice.uk");
+
+
+
+
+
+
+
+    private double test_step = 0.01;//for testing players moving
+    //iterator for simulation:
+    int p=0;
+
+
+
+
+
+
 
     //private FirebaseAnalytics mFirebaseAnalytics;
 
-    private DatabaseReference mDatabase;
+
 
 
 
@@ -186,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             mapController.animateTo(new GeoPoint(48.8588443, 2.2943506), zoom_factor, speed);
 
     }
-
+    private int l=0;
 
     private GeoPoint pos_extractor(){//for some reason cancels others markers
 
@@ -221,8 +261,11 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
-        //initialize database:
-        mDatabase = FirebaseDatabase.getInstance("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app").getReference();
+
+        //set the test Players:
+
+
+
 
         // Set button initially disabled until location is fetched
         playsoundButton.setEnabled(false);
@@ -235,7 +278,8 @@ public class MainActivity extends AppCompatActivity {
         playsoundButton.setOnClickListener(v -> {
            // if (mediaPlayer != null) {
                 //mediaPlayer.start();}
-            mDatabase.child("users").child("user1").setValue("Juan Carlos");
+
+
 
                 ToneGenerator Tonegen=new ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
@@ -249,6 +293,12 @@ public class MainActivity extends AppCompatActivity {
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
                     playsoundButton.setText("GAME STARTING");
+
+                    //adding local player to the game server:
+                    client_player.setLatitude(userLatitude);
+                    client_player.setLongitude(userLongitude);
+                    mDatabase.add_player_to_db(client_player);
+
 
                     handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
                 }
@@ -304,16 +354,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-
     }//oncreateend
-
-
-
-
-
-
-
 
 
     private void fetchLocation() {
@@ -322,9 +363,6 @@ public class MainActivity extends AppCompatActivity {
             public void onLocationResult(LocationData locationData) {
                 userLatitude = locationData.getLatitude();
                 userLongitude = locationData.getLongitude();
-                //Log.d("Location", "Latitude: " + userLatitude + " & Longitude: " + userLongitude);
-
-                // Enable the button now that location is available
 
 
 
@@ -335,6 +373,80 @@ public class MainActivity extends AppCompatActivity {
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
                 createMarkers(inputStream);
                 MarkersCreatedFlag =true;}
+
+
+                //ACTUAL LOCAL PLAYER:
+                //first loc is sent to the server after pressing the start button then updated here
+                mDatabase.update_player_loc_db(client_player, userLatitude, userLongitude);
+
+                //SIMULATION OF PLAYERS ENTERING THE GAME
+
+                    switch (p){
+                        case 0:
+                            mDatabase.add_player_to_db(Michael_Jackson_player);
+                            Log.d("MainActivity", "Michael J entered the online  db");
+                            break;
+
+                        case 30:
+                            mDatabase.add_player_to_db(Spiderman_player);
+                            Log.d("MainActivity", "Spiderman entered the online db");
+                            break;
+
+                        case 75:
+                            mDatabase.add_player_to_db(Batman_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 150:
+
+                            mDatabase.add_player_to_db(Superman_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 200:
+                        mDatabase.add_player_to_db(Harry_Potter_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+
+                        case 250:
+                        mDatabase.add_player_to_db(Mary_Poppins_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 300:
+                            // Remove the 'online_players' node
+                            mDatabase.get_db_ref().child("online_players").removeValue()
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        // Successfully deleted the node
+                                        Log.d("Firebase", "Online_players node deleted successfully.");
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        // Failed to delete the node
+                                        Log.e("Firebase", "Error deleting online_players node", e);
+                                    }
+                                });
+                        break;
+                    }
+
+
+                p=p%330 +1;
+
+
+                //SIMULATION: UPDATE test_players location
+                if (!Player.test_playerList.isEmpty()) {
+                    for (Player test_player : Player.test_playerList) {
+                        test_player.setLatitude(test_player.getLatitude() + test_step);
+                        test_player.setLongitude(test_player.getLongitude() - test_step);
+                        mDatabase.update_player_loc_db(test_player, test_player.getLatitude(), test_player.getLongitude());
+                    }
+                }
+
 
             }
 

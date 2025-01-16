@@ -60,6 +60,9 @@ dependencies {
     //REALTIME DATABASE:
     implementation ("com.google.firebase:firebase-database")
 
+    //HTTP Client
+    implementation ("com.squareup.okhttp3:okhttp:4.11.0")
+
 
 
 
