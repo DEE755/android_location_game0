@@ -1,5 +1,8 @@
 package com.example.myapplicationtest1;
 
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.overlay.Marker;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,12 +15,23 @@ public class Player {
     private double longitude; // Current longitude of the player
     private int currentScore; // Player's current score
 
-    public static List<Player> test_playerList;
-
+    private String ref_to_logo;
+    public static List<Player> test_playerList= new ArrayList<>();
 
     private int rank;
 
     static int player_counter=0;
+
+    //FOR TEST PURPOSE:
+    Marker player_marker=null;
+
+    void setplayer_marker(Marker player_marker){
+        this.player_marker=player_marker;
+    }
+
+    Marker getplayer_marker(){
+        return this.player_marker;
+    }
     // Constructors
 
     public Player(){}
@@ -31,9 +45,14 @@ public class Player {
         this.email=email;
         player_counter++;
 
-        test_playerList = new ArrayList<>();
         test_playerList.add(this);
 
+        ref_to_logo=name.toLowerCase().replace(" ", "_")+"_logo";
+
+    }
+
+    public void setPlayer_marker(Marker playerMarker) {
+        this.player_marker=playerMarker;
     }
 
     // Getter and Setter for Name
@@ -101,5 +120,9 @@ public class Player {
                 ", longitude=" + longitude +
                 ", currentScore=" + currentScore +
                 '}';
+    }
+
+    public GeoPoint getPosition() {
+        return new GeoPoint(this.latitude, this.longitude);
     }
 }

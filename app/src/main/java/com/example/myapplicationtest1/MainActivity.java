@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
 
     private ProgressBar locationProgressBar;
-    private MapView map=null;
+    private MapView mapview =null;
 
     private IMapController MapController;
     private Marker userMarker;
@@ -141,25 +141,27 @@ public class MainActivity extends AppCompatActivity {
     //TEST PLAYERS:
 
 
-    private Player Michael_Jackson_player =new Player("Michael Jackson",31,27,"mjmusic@sony.com");
+    private Player Michael_Jackson_player =new Player("Michael Jackson",32.0153,34.7741,"mjmusic@sony.com");
 
-    private Player Spiderman_player =new Player("Peter Parker",34,28,"peter_parker@gmail.com");
+    private Player Spiderman_player =new Player("Peter Parker",32.0150,34.7720,"peter_parker@gmail.com");
 
-    private Player Batman_player =new Player("Bruce Wayne",33,29,"bruce-wayne@ghotam.com");
+    private Player Batman_player =new Player("Bruce Wayne",32.0158,34.774,"bruce-wayne@ghotam.com");
 
-    private Player Superman_player =new Player("Clark Kent",32,30,"Clark-Kent@dc.com");
+    private Player Superman_player =new Player("Clark Kent",32.0158,34.76,"Clark-Kent@dc.com");
 
-    private Player Harry_Potter_player =new Player("Harry Potter",22,2,"hp@hogwart.uk");
+    private Player Harry_Potter_player =new Player("Harry Potter",32.015,34.774,"hp@hogwart.uk");
 
-    private Player Mary_Poppins_player =new Player("Mary Poppins",23,3,"marry_popping@londonmagicservice.uk");
-
-
+    private Player Mary_Poppins_player =new Player("Mary Poppins",32.025,34.77,"marry_popping@londonmagicservice.uk");
 
 
+//TODO: MAKE THE FUNCTION THAT ADDS THE PLAYERS TO THE MAP so it is not only from start of the game but updating as new players enter the game
+    //probably detect when new player enter
 
 
 
-    private double test_step = 0.01;//for testing players moving
+
+
+    private double test_step = 0.00001;//for testing players moving
     //iterator for simulation:
     int p=0;
 
@@ -202,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
     private void show_current_position(double zoom_factor, Long speed){//both displays and output it
 
 
-        MyLocationNewOverlay myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), map);
+        MyLocationNewOverlay myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), mapview);
 
 // Enable the MyLocation overlay
         myLocationOverlay.enableMyLocation();
@@ -217,10 +219,10 @@ public class MainActivity extends AppCompatActivity {
 
         //myLocationOverlay.setPersonIcon();
 // Add the overlay to the map
-        map.getOverlays().add(myLocationOverlay);
+        mapview.getOverlays().add(myLocationOverlay);
 
 // Set the map controller to zoom and animate to the user's location when it's obtained
-        IMapController mapController = map.getController();
+        IMapController mapController = mapview.getController();
         //mapController.setZoom(zoom_factor);
 
             mapController.animateTo(new GeoPoint(48.8588443, 2.2943506), zoom_factor, speed);
@@ -346,12 +348,11 @@ public class MainActivity extends AppCompatActivity {
         //inflate and create the map
         //setContentView(R.layout.activity_main);// makes crashing
 
-        map = findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
+        mapview = findViewById(R.id.map);
+        mapview.setTileSource(TileSourceFactory.MAPNIK);
 
 
         show_current_position(9.0,1000L);
-
 
 
     }//oncreateend
@@ -371,13 +372,27 @@ public class MainActivity extends AppCompatActivity {
                     playsoundButton.setText("START GAME");
                     playsoundButton.setEnabled(true);
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
-                createMarkers(inputStream);
+                    //Bus markers and put them on the mapview
+                    create_all_bus_Markers(inputStream);
+                    //create current online players markers and put them on the mapview
+                    for (Player player : Player.test_playerList){
+                        Location_utils.create_and_place_player_marker(player, mapview, client_player);
+
+                    }
                 MarkersCreatedFlag =true;}
 
+                else {
 
-                //ACTUAL LOCAL PLAYER:
-                //first loc is sent to the server after pressing the start button then updated here
-                mDatabase.update_player_loc_db(client_player, userLatitude, userLongitude);
+                    //ACTUAL LOCAL PLAYER:
+                    //first loc is sent to the server after pressing the start button then updated here
+                    mDatabase.update_player_loc_db(client_player, userLatitude, userLongitude);
+
+                    //update the test players marker:
+
+                    Location_utils.updatePlayersMarkers(); //make crash
+
+                    mapview.invalidate();
+                }
 
                 //SIMULATION OF PLAYERS ENTERING THE GAME
 
@@ -542,7 +557,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void createMarkers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
+    private void create_all_bus_Markers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
     {
 
 
@@ -585,7 +600,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("CSV", "Random Row: " + String.join(", ", values));
 
                 // Create and position the marker
-                Marker temp_marker = new Marker(map);
+                Marker temp_marker = new Marker(mapview);
                 GeoPoint temp_point = new GeoPoint(
                         Double.parseDouble(values[1]), // Latitude
                         Double.parseDouble(values[2])  // Longitude
@@ -603,20 +618,20 @@ public class MainActivity extends AppCompatActivity {
 
                 temp_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                 temp_marker.setIcon(getResources().getDrawable(R.drawable.bus100_small));
-                map.getOverlays().add(temp_marker);
+                mapview.getOverlays().add(temp_marker);
                 markerList.add(temp_marker);
                 i++; // Increment only if a row is processed
             }
 
             // Refresh the map
-            map.invalidate();
+            mapview.invalidate();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // Refresh the map to display the marker
-        map.invalidate();
+        mapview.invalidate();
     }
 
     private void updateMarkerDistances() {
@@ -627,7 +642,7 @@ public class MainActivity extends AppCompatActivity {
             String time=getCurrentTime();
             marker.setTitle("Bus Station - Distance: " + distance + " meters\n"+"Last Update" + time);
         }
-        map.invalidate();
+        mapview.invalidate();
     }
 
 
