@@ -22,6 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.myapplicationtest1.databinding.ActivityMainBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.navigation.NavController;
@@ -29,7 +31,8 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-
+//OSM
+import org.apache.commons.logging.LogFactory;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
@@ -50,103 +53,23 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
-
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-class DistanceCalculator {
-
-    private static final double EARTH_RADIUS = 6371000; // Earth's radius in meters
-
-    /**
-     * Calculates the distance between two geographical points using the haversine formula.
-     *
-     * @param point1 The first geographical point.
-     * @param point2 The second geographical point.
-     * @return The distance in meters.
-     */
-    public static int calculateDistance(GeoPoint point1, GeoPoint point2) {
-        double lat1 = Math.toRadians(point1.getLatitude());
-        double lon1 = Math.toRadians(point1.getLongitude());
-        double lat2 = Math.toRadians(point2.getLatitude());
-        double lon2 = Math.toRadians(point2.getLongitude());
-
-        double deltaLat = lat2 - lat1;
-        double deltaLon = lon2 - lon1;
-
-        double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                        Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return (int)(EARTH_RADIUS * c);
-    }
 
 
-}
-class ToneGenerator {
+//FIREBASE:
 
 
-    public void toneGenerator(float startFreq, float endFreq, int nbOfSeconds) {
-        final int sampleRate = 44100; // Standard audio sample rate
-        int numSamples = nbOfSeconds * sampleRate; // Total samples for the duration
-        double[] sample = new double[numSamples]; // Array to hold sample data
-        byte[] generatedSound = new byte[2 * numSamples]; // Output buffer for audio
-        new Thread(() -> {
-        // Generate the tone samples
-        for (int i = 0; i < numSamples; ++i) {
-            double currentFreq = startFreq + ((endFreq - startFreq) * i / numSamples); // Linear interpolation
-            sample[i] = Math.sin(2 * Math.PI * i * currentFreq / sampleRate); // Sine wave calculation
-        }
+//SOUND
 
-        // Convert to 16-bit PCM format
-        int index = 0;
-        for (final double value : sample) {
-            // Scale to max amplitude for 16-bit PCM
-            final short val = (short) ((value * 32767));
-            // Little-endian format: LSB first
-            generatedSound[index++] = (byte) (val & 0x00ff);
-            generatedSound[index++] = (byte) ((val & 0xff00) >>> 8);
-        }
-
-        // Play the tone using AudioTrack
-        AudioTrack audioTrack = new AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                generatedSound.length,
-                AudioTrack.MODE_STATIC
-        );
-
-        audioTrack.write(generatedSound, 0, generatedSound.length);
-        audioTrack.play();
-
-        // Wait for the tone to finish
-        try {
-            Thread.sleep(nbOfSeconds * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-
-        }
-
-        // Release the AudioTrack resources
-        audioTrack.stop();
-        audioTrack.release();
-    }).start();
-    };
-}
 
 
 
 public class MainActivity extends AppCompatActivity {
 
 
+    private static final org.apache.commons.logging.Log log = LogFactory.getLog(MainActivity.class);
 
     // Inner class to hold location data
     public class LocationData {
@@ -163,11 +86,19 @@ public class MainActivity extends AppCompatActivity {
         public double getLongitude() { return longitude; }
     }
 
+    //CALLBACKS FOR ASYNCHRONOUS OPERATIONS:
+
     // Callback interface for location results
     public interface MyLocationCallback {
         void onLocationResult(LocationData locationData);
         void onError(String errorMsg);
     }
+
+    //callback for results from server:
+    public interface ValueCallback<T> {
+        void onValueReceived(T value);
+    }
+
 
     private ActivityMainBinding binding;
     private FusedLocationProviderClient fusedLocationClient;
@@ -184,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
 
     private ProgressBar locationProgressBar;
-    private MapView map=null;
+    private MapView mapview =null;
 
     private IMapController MapController;
     private Marker userMarker;
@@ -199,9 +130,52 @@ public class MainActivity extends AppCompatActivity {
 
     private double zoom_speed=1000L;
 
-    //GpsMyLocationProvider myloc=new GpsMyLocationProvider();//make crash
+    private int current_iteration=0;
 
-    //GeoPoint mylocgeo= new GeoPoint(myloc.getLastKnownLocation().getLatitude(), myloc.getLastKnownLocation().getLongitude());
+    private Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
+
+    private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il"); //this is the 'client' player (the device owner)
+
+
+
+    //TEST PLAYERS:
+
+
+    private Player Michael_Jackson_player =new Player("Michael Jackson",32.0153,34.7741,"mjmusic@sony.com");
+
+    private Player Spiderman_player =new Player("Peter Parker",32.0150,34.7720,"peter_parker@gmail.com");
+
+    private Player Batman_player =new Player("Bruce Wayne",32.0158,34.774,"bruce-wayne@ghotam.com");
+
+    private Player Superman_player =new Player("Clark Kent",32.0158,34.76,"Clark-Kent@dc.com");
+
+    private Player Harry_Potter_player =new Player("Harry Potter",32.015,34.774,"hp@hogwart.uk");
+
+    private Player Mary_Poppins_player =new Player("Mary Poppins",32.025,34.77,"marry_popping@londonmagicservice.uk");
+
+
+//TODO: MAKE THE FUNCTION THAT ADDS THE PLAYERS TO THE MAP so it is not only from start of the game but updating as new players enter the game
+    //probably detect when new player enter
+
+
+
+
+
+    private double test_step = 0.00001;//for testing players moving
+    //iterator for simulation:
+    int p=0;
+
+
+
+
+
+
+
+    //private FirebaseAnalytics mFirebaseAnalytics;
+
+
+
+
 
     private void readCsvFile(InputStream inputStream) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -230,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
     private void show_current_position(double zoom_factor, Long speed){//both displays and output it
 
 
-        MyLocationNewOverlay myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), map);
+        MyLocationNewOverlay myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), mapview);
 
 // Enable the MyLocation overlay
         myLocationOverlay.enableMyLocation();
@@ -245,16 +219,16 @@ public class MainActivity extends AppCompatActivity {
 
         //myLocationOverlay.setPersonIcon();
 // Add the overlay to the map
-        map.getOverlays().add(myLocationOverlay);
+        mapview.getOverlays().add(myLocationOverlay);
 
 // Set the map controller to zoom and animate to the user's location when it's obtained
-        IMapController mapController = map.getController();
+        IMapController mapController = mapview.getController();
         //mapController.setZoom(zoom_factor);
 
             mapController.animateTo(new GeoPoint(48.8588443, 2.2943506), zoom_factor, speed);
 
     }
-
+    private int l=0;
 
     private GeoPoint pos_extractor(){//for some reason cancels others markers
 
@@ -289,19 +263,25 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+
+        //set the test Players:
+
+
+
+
         // Set button initially disabled until location is fetched
         playsoundButton.setEnabled(false);
         playsoundButton.setText("Fetching Location...");
 
 
 
-        //this is a simmple change
-
 
         // Handle button click
         playsoundButton.setOnClickListener(v -> {
            // if (mediaPlayer != null) {
                 //mediaPlayer.start();}
+
+
 
                 ToneGenerator Tonegen=new ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
@@ -315,6 +295,12 @@ public class MainActivity extends AppCompatActivity {
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
                     playsoundButton.setText("GAME STARTING");
+
+                    //adding local player to the game server:
+                    client_player.setLatitude(userLatitude);
+                    client_player.setLongitude(userLongitude);
+                    mDatabase.add_player_to_db(client_player);
+
 
                     handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
                 }
@@ -337,7 +323,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-
+                //ANALYTICS:
+            //mFirebaseAnalytics.logEvent("button_clickj", null);
         });
 
 
@@ -361,53 +348,14 @@ public class MainActivity extends AppCompatActivity {
         //inflate and create the map
         //setContentView(R.layout.activity_main);// makes crashing
 
-        map = findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
+        mapview = findViewById(R.id.map);
+        mapview.setTileSource(TileSourceFactory.MAPNIK);
 
 
         show_current_position(9.0,1000L);
 
 
-        //random Lat & Long:
-
-// Define the geographic point for the marker
-       // GeoPoint point = new GeoPoint(32.0148, 34.7767);
-
-// Create a new Marker object
-        // Marker marker = new Marker(map);
-
-// Set the position of the marker
-       // marker.setPosition(point);
-
-// Optionally, set a title for the marker
-       // marker.setTitle("a first point in Holon");
-
-// Optionally, set an icon for the marker
-// marker.setIcon(getResources().getDrawable(R.drawable.marker_icon));
-
-// Optionally, set the anchor point of the marker
-// marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-
-// Add the marker to the map's overlay
-       // map.getOverlays().add(marker);
-
-// Refresh the map to display the marker
-        //map.invalidate();
-
-
-
-
-
-
-
     }//oncreateend
-
-
-
-
-
-
-
 
 
     private void fetchLocation() {
@@ -416,9 +364,6 @@ public class MainActivity extends AppCompatActivity {
             public void onLocationResult(LocationData locationData) {
                 userLatitude = locationData.getLatitude();
                 userLongitude = locationData.getLongitude();
-                //Log.d("Location", "Latitude: " + userLatitude + " & Longitude: " + userLongitude);
-
-                // Enable the button now that location is available
 
 
 
@@ -427,8 +372,96 @@ public class MainActivity extends AppCompatActivity {
                     playsoundButton.setText("START GAME");
                     playsoundButton.setEnabled(true);
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
-                createMarkers(inputStream);
+                    //Bus markers and put them on the mapview
+                    create_all_bus_Markers(inputStream);
+                    //create current online players markers and put them on the mapview
+                    for (Player player : Player.test_playerList){
+                        Location_utils.create_and_place_player_marker(player, mapview, client_player);
+
+                    }
                 MarkersCreatedFlag =true;}
+
+                else {
+
+                    //ACTUAL LOCAL PLAYER:
+                    //first loc is sent to the server after pressing the start button then updated here
+                    mDatabase.update_player_loc_db(client_player, userLatitude, userLongitude);
+
+                    //update the test players marker:
+
+                    Location_utils.updatePlayersMarkers(); //make crash
+
+                    mapview.invalidate();
+                }
+
+                //SIMULATION OF PLAYERS ENTERING THE GAME
+
+                    switch (p){
+                        case 0:
+                            mDatabase.add_player_to_db(Michael_Jackson_player);
+                            Log.d("MainActivity", "Michael J entered the online  db");
+                            break;
+
+                        case 30:
+                            mDatabase.add_player_to_db(Spiderman_player);
+                            Log.d("MainActivity", "Spiderman entered the online db");
+                            break;
+
+                        case 75:
+                            mDatabase.add_player_to_db(Batman_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 150:
+
+                            mDatabase.add_player_to_db(Superman_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 200:
+                        mDatabase.add_player_to_db(Harry_Potter_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+
+                        case 250:
+                        mDatabase.add_player_to_db(Mary_Poppins_player);
+                            Log.d("MainActivity", "New player entered the online db");
+                            break;
+
+                        case 300:
+                            // Remove the 'online_players' node
+                            mDatabase.get_db_ref().child("online_players").removeValue()
+                                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        // Successfully deleted the node
+                                        Log.d("Firebase", "Online_players node deleted successfully.");
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        // Failed to delete the node
+                                        Log.e("Firebase", "Error deleting online_players node", e);
+                                    }
+                                });
+                        break;
+                    }
+
+
+                p=p%330 +1;
+
+
+                //SIMULATION: UPDATE test_players location
+                if (!Player.test_playerList.isEmpty()) {
+                    for (Player test_player : Player.test_playerList) {
+                        test_player.setLatitude(test_player.getLatitude() + test_step);
+                        test_player.setLongitude(test_player.getLongitude() - test_step);
+                        mDatabase.update_player_loc_db(test_player, test_player.getLatitude(), test_player.getLongitude());
+                    }
+                }
+
 
             }
 
@@ -524,7 +557,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void createMarkers(InputStream inputStream)
+    private void create_all_bus_Markers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
     {
 
 
@@ -567,7 +600,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("CSV", "Random Row: " + String.join(", ", values));
 
                 // Create and position the marker
-                Marker temp_marker = new Marker(map);
+                Marker temp_marker = new Marker(mapview);
                 GeoPoint temp_point = new GeoPoint(
                         Double.parseDouble(values[1]), // Latitude
                         Double.parseDouble(values[2])  // Longitude
@@ -580,25 +613,25 @@ public class MainActivity extends AppCompatActivity {
                 // Customize marker title
                 temp_marker.setTitle(
                         "Bus Station " + (i + 1) + " " + values[3] +
-                                "\nDistance from me (check if live?): " + distanceInMeters + 0 + " meters"
+                                "\nDistance from me : " + distanceInMeters + 0 + " meters"
                 );
 
                 temp_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                 temp_marker.setIcon(getResources().getDrawable(R.drawable.bus100_small));
-                map.getOverlays().add(temp_marker);
+                mapview.getOverlays().add(temp_marker);
                 markerList.add(temp_marker);
                 i++; // Increment only if a row is processed
             }
 
             // Refresh the map
-            map.invalidate();
+            mapview.invalidate();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // Refresh the map to display the marker
-        map.invalidate();
+        mapview.invalidate();
     }
 
     private void updateMarkerDistances() {
@@ -609,7 +642,7 @@ public class MainActivity extends AppCompatActivity {
             String time=getCurrentTime();
             marker.setTitle("Bus Station - Distance: " + distance + " meters\n"+"Last Update" + time);
         }
-        map.invalidate();
+        mapview.invalidate();
     }
 
 
@@ -623,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
     {int distance, min_distance=9999999;
         for(Marker marker : markerList ){
             distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), marker.getPosition());
-
+//test
             if (distance<min_distance)
             {
                 min_distance=distance;
