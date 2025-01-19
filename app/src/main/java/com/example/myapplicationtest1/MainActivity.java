@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         // Getters
         public double getLatitude() { return latitude; }
         public double getLongitude() { return longitude; }
+
     }
 
     //CALLBACKS FOR ASYNCHRONOUS OPERATIONS:
@@ -103,10 +104,11 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private FusedLocationProviderClient fusedLocationClient;
 
-    // Member variables to store latitude and longitude
+    // Member variables to store local latitude and longitude
     private double userLatitude;
     private double userLongitude;
 
+    private boolean executed = false;
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
@@ -117,6 +119,9 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar locationProgressBar;
     private MapView mapview =null;
 
+    public MapView getMapview() {
+        return mapview;
+    }
     private IMapController MapController;
     private Marker userMarker;
 
@@ -139,26 +144,20 @@ public class MainActivity extends AppCompatActivity {
 
 
     //TEST PLAYERS:
+    //we need to check why they appears at same location as the client player
 
 
-    private Player Michael_Jackson_player =new Player("Michael Jackson",32.0153,34.7741,"mjmusic@sony.com");
+    private Player Michael_Jackson_player =new Player("Michael Jackson",21.0153,34.7741,"mjmusic@sony.com");
 
-    private Player Spiderman_player =new Player("Peter Parker",32.0150,34.7720,"peter_parker@gmail.com");
+    private Player Spiderman_player =new Player("Peter Parker",21.0150,34.7720,"peter_parker@gmail.com");
 
-    private Player Batman_player =new Player("Bruce Wayne",32.0158,34.774,"bruce-wayne@ghotam.com");
+    private Player Batman_player =new Player("Bruce Wayne",21.0158,34.774,"bruce-wayne@ghotam.com");
 
-    private Player Superman_player =new Player("Clark Kent",32.0158,34.76,"Clark-Kent@dc.com");
+    private Player Superman_player =new Player("Clark Kent",21.0158,34.76,"Clark-Kent@dc.com");
 
     private Player Harry_Potter_player =new Player("Harry Potter",32.015,34.774,"hp@hogwart.uk");
 
     private Player Mary_Poppins_player =new Player("Mary Poppins",32.025,34.77,"marry_popping@londonmagicservice.uk");
-
-
-//TODO: MAKE THE FUNCTION THAT ADDS THE PLAYERS TO THE MAP so it is not only from start of the game but updating as new players enter the game
-    //probably detect when new player enter
-
-
-
 
 
     private double test_step = 0.00001;//for testing players moving
@@ -229,16 +228,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
     private int l=0;
-
-    private GeoPoint pos_extractor(){//for some reason cancels others markers
-
-
-        GpsMyLocationProvider temp= new GpsMyLocationProvider(this);
-       GeoPoint myloc = new GeoPoint(temp.getLastKnownLocation().getLatitude(),temp.getLastKnownLocation().getLatitude());
-        return myloc;
-    }
-
-
 
 
     @Override
@@ -374,12 +363,68 @@ public class MainActivity extends AppCompatActivity {
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
                     //Bus markers and put them on the mapview
                     create_all_bus_Markers(inputStream);
-                    //create current online players markers and put them on the mapview
-                    for (Player player : Player.test_playerList){
-                        Location_utils.create_and_place_player_marker(player, mapview, client_player);
+                    //The players are fetch from the DB to a java_player object
+                    //This is a bit complicated to understand: ASYNCHRONOUS BEHAVIOR CALLBACKS
+                    //we pass the mapview to be able to create the markers
 
+                    //put all Players in the list online_playerList
+                    //the list_online_playerList is reconstituted every time some of the data changes in the database
+                    mDatabase.fetchAllPlayers(new Database.PlayersCallback() {
+                        @Override
+                        public void onPlayersFetched(List<Player> players) {
+                            // Handle the list of players
+                            for (Player player : players) {
+                                Log.d("Player", player.toString());
+                            }
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            // Handle the error
+                            Log.e("Firebase", "Error fetching players", e);
+                        }
+                    }, mapview, MarkersCreatedFlag , new Runnable(){
+                        @Override
+                        public void run() {
+                            /*if (executed == true) {
+                                return;
+                            }
+                            executed=true;*/
+                            // This code will run when the online_playerList is ready
+                            for (Player player : Player.online_playerList) {
+                                // The markers now are already created and placed on the field of the Player
+                                Marker m = player.getPlayer_marker();
+
+                                if (player.getIs_on_map()==false)
+                                {
+
+                                    mapview.getOverlays().add(m);
+                                }
+                                    player.setIs_on_map(true);
+                                    mDatabase.get_Player_ref().child("is_on_map").setValue(true);
+
+                                // Refresh the map
+                                mapview.invalidate();
+                            }
+                        }
+                    });
+
+                    for (Player player : Player.online_playerList){//it is empty!! tha's because the result werent ready
+
+                        //the markers now are already created and placed on the field of the Player
+
+                        //Location_utils.create_and_place_player_marker(player, mapview, client_player);
+                        // add the marker to the map:
+
+
+                        mapview.getOverlays().add(player.getPlayer_marker());
+                        //PlayersmarkerList.add(player_marker);
+
+                        // Refresh the map
+                        mapview.invalidate();
                     }
-                MarkersCreatedFlag =true;}
+                MarkersCreatedFlag =true;
+                }
 
                 else {
 
@@ -389,7 +434,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //update the test players marker:
 
-                    Location_utils.updatePlayersMarkers(); //make crash
+                    //Location_utils.updatePlayersMarkers();
 
                     mapview.invalidate();
                 }
@@ -415,23 +460,33 @@ public class MainActivity extends AppCompatActivity {
                         case 150:
 
                             mDatabase.add_player_to_db(Superman_player);
+
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
                         case 200:
-                        mDatabase.add_player_to_db(Harry_Potter_player);
+                            mDatabase.add_player_to_db(Harry_Potter_player);
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
+                        case 220:
 
+                            break;
                         case 250:
-                        mDatabase.add_player_to_db(Mary_Poppins_player);
+                            mDatabase.add_player_to_db(Mary_Poppins_player);
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
                         case 300:
+                            mDatabase.removePlayerFromDatabase(Batman_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
+
                             // Remove the 'online_players' node
-                            mDatabase.get_db_ref().child("online_players").removeValue()
+                            /*mDatabase.get_db_ref().child("online_players").removeValue()
                                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                                     @Override
                                     public void onSuccess(Void aVoid) {
@@ -445,7 +500,7 @@ public class MainActivity extends AppCompatActivity {
                                         // Failed to delete the node
                                         Log.e("Firebase", "Error deleting online_players node", e);
                                     }
-                                });
+                                });*/
                         break;
                     }
 
@@ -454,11 +509,11 @@ public class MainActivity extends AppCompatActivity {
 
 
                 //SIMULATION: UPDATE test_players location
-                if (!Player.test_playerList.isEmpty()) {
-                    for (Player test_player : Player.test_playerList) {
-                        test_player.setLatitude(test_player.getLatitude() + test_step);
-                        test_player.setLongitude(test_player.getLongitude() - test_step);
-                        mDatabase.update_player_loc_db(test_player, test_player.getLatitude(), test_player.getLongitude());
+                if (!Player.online_playerList.isEmpty()) {
+                    for (Player test_player : Player.online_playerList) {
+                        //test_player.setLatitude(test_player.getLatitude() + test_step);
+                        //test_player.setLongitude(test_player.getLongitude() - test_step);
+                        mDatabase.update_player_loc_db(test_player, test_player.getLatitude()+ test_step, test_player.getLongitude()- test_step);
                     }
                 }
 

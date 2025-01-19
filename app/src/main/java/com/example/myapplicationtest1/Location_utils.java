@@ -2,21 +2,15 @@ package com.example.myapplicationtest1;
 
 //import static androidx.appcompat.graphics.drawable.DrawableContainerCompat.Api21Impl.getResources;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.osmdroid.api.IMapController;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,16 +22,10 @@ public class Location_utils {
     static List<Marker> PlayersmarkerList = new ArrayList<>();
     static Marker create_and_place_player_marker(Player player_, MapView mapview, Player client_player) {
         // Create and position the marker
-        Marker player_marker = new Marker(mapview);
+        Marker player_marker = player_.create_player_marker(mapview, player_);
 
-        // need to pass lat and long to a geopoint before setting the position (that's an osm rule)
-        GeoPoint player_loc = new GeoPoint(
-                player_.getLatitude(), player_.getLongitude()
-        );
-
-        player_marker.setPosition(player_loc);
         // determining the distance from the client player
-        double distanceInMeters = DistanceCalculator.calculateDistance(player_loc, new GeoPoint(client_player.getLatitude(), client_player.getLongitude()));
+        double distanceInMeters = DistanceCalculator.calculateDistance(new GeoPoint(player_.getLatitude(),player_.getLongitude()), new GeoPoint(client_player.getLatitude(), client_player.getLongitude()));
 
         // Customize marker title
         player_marker.setTitle(
@@ -85,6 +73,19 @@ public class Location_utils {
         return player_marker;
     }
 
+
+
+    void place_marker_on_map(Player player_, Player client_player, MapView mapview) {
+
+        // add the marker to the map:
+        mapview.getOverlays().add(player_.getPlayer_marker());
+        //PlayersmarkerList.add(player_marker);
+
+        // Refresh the map
+        mapview.invalidate();
+
+    }
+
     void fetchOnlinePlayersData() {
         DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("online_players");
 
@@ -115,18 +116,20 @@ public class Location_utils {
     //TODO: update the player's marker logo with their real picture path from database
     static public void updatePlayersMarkers() {
         //GeoPoint myCurrentPoint = new GeoPoint(player.getLatitude(), player.getLongitude());
-        if (!Player.test_playerList.isEmpty()) {
-            for (Player curr_player : Player.test_playerList) {
-                GeoPoint player_position = curr_player.getPosition();//NEDD TO SYNC betweeen marker and player
+        if (!Player.online_playerList.isEmpty()) {
+            for (Player curr_player : Player.online_playerList) {
+
+                GeoPoint player_position = new GeoPoint(curr_player.getLatitude(), curr_player.getLongitude());
                 //GeoPoint tempPoint = marker.getPosition();
                 //double distance = DistanceCalculator.calculateDistance(tempPoint, myCurrentPoint);
                 //String time=getCurrentTime();
                 //marker.setTitle("Bus Station - Distance: " + distance + " meters\n"+"Last Update" + time);
-                curr_player.getplayer_marker().setPosition(player_position);
+                curr_player.getPlayer_marker().setPosition(player_position);
                 //marker.setPosition();
             }
 
         }
     }
+
 
 }
