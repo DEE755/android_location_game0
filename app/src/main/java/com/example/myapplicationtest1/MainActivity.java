@@ -1,6 +1,7 @@
 package com.example.myapplicationtest1;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,6 +26,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.database.FirebaseDatabase;
 
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -56,7 +58,9 @@ import java.util.Date;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-
+//TODO//TODO IT SEEMS THAT THE WRONG PLAYER IS REMOVED FROM THE DATABASE THEN IT IS CREATED/DELETED AND SOME STAYS IN THE DATABASE
+//TODO DELETING ALL AT ONCE SEEMS NOT TO WORK
+//WEIRD THING THE PLAYERS ARE ADDED EVEN IF THERE IS NO INTERNET ACCESS: CHECK CODE
 
 //FIREBASE:
 
@@ -139,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
 
-    private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il"); //this is the 'client' player (the device owner)
+    private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il",mDatabase); //this is the 'client' player (the device owner)
 
 
 
@@ -147,17 +151,17 @@ public class MainActivity extends AppCompatActivity {
     //we need to check why they appears at same location as the client player
 
 
-    private Player Michael_Jackson_player =new Player("Michael Jackson",21.0153,34.7741,"mjmusic@sony.com");
+    private Player Michael_Jackson_player =new Player("Michael Jackson",32.0240,34.7741,"mjmusic@sony.com",mDatabase);
 
-    private Player Spiderman_player =new Player("Peter Parker",21.0150,34.7720,"peter_parker@gmail.com");
+    private Player Spiderman_player =new Player("Peter Parker",32.0248,34.7720,"peter_parker@gmail.com",mDatabase);
 
-    private Player Batman_player =new Player("Bruce Wayne",21.0158,34.774,"bruce-wayne@ghotam.com");
+    private Player Batman_player =new Player("Bruce Wayne",32.0268,34.774,"bruce-wayne@ghotam.com",mDatabase);
 
-    private Player Superman_player =new Player("Clark Kent",21.0158,34.76,"Clark-Kent@dc.com");
+    private Player Superman_player =new Player("Clark Kent",32.01205,34.76,"Clark-Kent@dc.com",mDatabase);
 
-    private Player Harry_Potter_player =new Player("Harry Potter",32.015,34.774,"hp@hogwart.uk");
+    private Player Harry_Potter_player =new Player("Harry Potter",32.015,34.774,"hp@hogwart.uk",mDatabase);
 
-    private Player Mary_Poppins_player =new Player("Mary Poppins",32.025,34.77,"marry_popping@londonmagicservice.uk");
+    private Player Mary_Poppins_player =new Player("Mary Poppins",32.025,34.77,"marry_popping@londonmagicservice.uk",mDatabase);
 
 
     private double test_step = 0.00001;//for testing players moving
@@ -252,9 +256,9 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
-
-        //set the test Players:
-
+        // Start the service class
+        Intent serviceIntent = new Intent(this, MyService.class);
+        startService(serviceIntent);
 
 
 
@@ -343,6 +347,12 @@ public class MainActivity extends AppCompatActivity {
 
         show_current_position(9.0,1000L);
 
+        //set the new players listener:
+
+        mDatabase.listenForNewOnlinePlayers(mapview);
+
+        // Enable disk persistence
+        //FirebaseDatabase.getInstance().setPersistenceEnabled(false);
 
     }//oncreateend
 
@@ -369,47 +379,9 @@ public class MainActivity extends AppCompatActivity {
 
                     //put all Players in the list online_playerList
                     //the list_online_playerList is reconstituted every time some of the data changes in the database
-                    mDatabase.fetchAllPlayers(new Database.PlayersCallback() {
-                        @Override
-                        public void onPlayersFetched(List<Player> players) {
-                            // Handle the list of players
-                            for (Player player : players) {
-                                Log.d("Player", player.toString());
-                            }
-                        }
 
-                        @Override
-                        public void onError(Exception e) {
-                            // Handle the error
-                            Log.e("Firebase", "Error fetching players", e);
-                        }
-                    }, mapview, MarkersCreatedFlag , new Runnable(){
-                        @Override
-                        public void run() {
-                            /*if (executed == true) {
-                                return;
-                            }
-                            executed=true;*/
-                            // This code will run when the online_playerList is ready
-                            for (Player player : Player.online_playerList) {
-                                // The markers now are already created and placed on the field of the Player
-                                Marker m = player.getPlayer_marker();
 
-                                if (player.getIs_on_map()==false)
-                                {
-
-                                    mapview.getOverlays().add(m);
-                                }
-                                    player.setIs_on_map(true);
-                                    mDatabase.get_Player_ref().child("is_on_map").setValue(true);
-
-                                // Refresh the map
-                                mapview.invalidate();
-                            }
-                        }
-                    });
-
-                    for (Player player : Player.online_playerList){//it is empty!! tha's because the result werent ready
+                    //for (Player player : Player.online_playerList){//it is empty!! tha's because the result werent ready
 
                         //the markers now are already created and placed on the field of the Player
 
@@ -417,12 +389,12 @@ public class MainActivity extends AppCompatActivity {
                         // add the marker to the map:
 
 
-                        mapview.getOverlays().add(player.getPlayer_marker());
+                        //mapview.getOverlays().add(player.getPlayer_marker());
                         //PlayersmarkerList.add(player_marker);
 
                         // Refresh the map
-                        mapview.invalidate();
-                    }
+                        //mapview.invalidate();
+                   // }
                 MarkersCreatedFlag =true;
                 }
 
@@ -442,24 +414,36 @@ public class MainActivity extends AppCompatActivity {
                 //SIMULATION OF PLAYERS ENTERING THE GAME
 
                     switch (p){
-                        case 0:
-                            mDatabase.add_player_to_db(Michael_Jackson_player);
+                        case 15:
+                            mDatabase.add_player_to_db(Spiderman_player);
+
                             Log.d("MainActivity", "Michael J entered the online  db");
                             break;
 
                         case 30:
-                            mDatabase.add_player_to_db(Spiderman_player);
+                            mDatabase.add_player_to_db(Michael_Jackson_player);
+
+                            break;
+
+                        case 50:
+                            mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
+
                             Log.d("MainActivity", "Spiderman entered the online db");
                             break;
+
 
                         case 75:
                             mDatabase.add_player_to_db(Batman_player);
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
+
+                        case 85:mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
+
                         case 150:
 
                             mDatabase.add_player_to_db(Superman_player);
+
 
                             Log.d("MainActivity", "New player entered the online db");
                             break;
@@ -470,20 +454,18 @@ public class MainActivity extends AppCompatActivity {
                             break;
 
                         case 220:
-
+                            mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
                             break;
                         case 250:
                             mDatabase.add_player_to_db(Mary_Poppins_player);
+
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
+                        case 270: mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
+
                         case 300:
-                            mDatabase.removePlayerFromDatabase(Batman_player.getEmail());
-                            mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
                             mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());
-                            mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
-                            mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
-                            mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
 
                             // Remove the 'online_players' node
                             /*mDatabase.get_db_ref().child("online_players").removeValue()
@@ -513,7 +495,8 @@ public class MainActivity extends AppCompatActivity {
                     for (Player test_player : Player.online_playerList) {
                         //test_player.setLatitude(test_player.getLatitude() + test_step);
                         //test_player.setLongitude(test_player.getLongitude() - test_step);
-                        mDatabase.update_player_loc_db(test_player, test_player.getLatitude()+ test_step, test_player.getLongitude()- test_step);
+                        //add here a if the player is still in the game, then because else it creates a new partial player thats bad.
+                        //mDatabase.update_player_loc_db(test_player, test_player.getLatitude()+ test_step, test_player.getLongitude()- test_step);
                     }
                 }
 
@@ -592,15 +575,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    // Release MediaPlayer resources when activity is destroyed
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
 
     public GeoPoint getMyCurrentGeoPoint() {
         if (userLatitude == 0.0 && userLongitude == 0.0) {
@@ -716,9 +690,20 @@ public class MainActivity extends AppCompatActivity {
             {
                 min_distance=distance;
             }
-
         }
         return min_distance;
     }
+
+    // In MainActivity.java
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+    }
+
 
 }

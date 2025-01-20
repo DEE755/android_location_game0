@@ -11,11 +11,10 @@ package com.example.myapplicationtest1;
 
 
 
+import com.google.firebase.database.Transaction;
+import com.google.firebase.database.MutableData;
 
 
-
-
-import static com.example.myapplicationtest1.Player.player_counter;
 
 import android.util.Log;
 
@@ -23,12 +22,14 @@ import androidx.annotation.NonNull;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
@@ -42,6 +43,10 @@ import java.util.Map;
 public class Database {
 
     private DatabaseReference db_ref;
+
+    public DatabaseReference  getDatabaseReference() {
+        return db_ref;
+    }
 
     private DatabaseReference Player_ref;// need to identify whos player it is (client) what about when we want to update others ?
     private FirebaseDatabase firebase_database;
@@ -62,7 +67,7 @@ public class Database {
         return this.db_ref;
     }
 
-    DatabaseReference get_Player_ref() {
+    DatabaseReference getPlayerRef() {
         return this.Player_ref;
     }
 
@@ -72,10 +77,12 @@ public class Database {
     }
 
     void add_player_to_db(Player player) {
+
         //CREATE A KEY THAT IS THE EMAIL BUT WITHOUT . BECAUSE FIREBASE DOESNT ALLOW DOTS IN KEYS
         String player_key = player.getEmail().replace(".", "_");
         db_ref.child("online_players").child(player_key).setValue(player);
 
+        //keep the database path for the player in the player object
         setPlayer_ref(db_ref.child("online_players").child(player_key));
 
 
@@ -88,23 +95,30 @@ public class Database {
 
     }
 
-    public void removePlayerFromDatabase(String email) {
-        // Replace dots in the email to avoid Firebase key issues
-        String playerKey = email.replace(".", "_");
-        //DatabaseReference playerRef = FirebaseDatabase.getInstance().getReference("online_players").child(playerKey);
 
-        get_Player_ref().removeValue().addOnSuccessListener(new OnSuccessListener<Void>() {
+    //Firebase doesnt always delete well the player
+    //this method does a transaction to delete the player it works a little bit better but still not 100%
+    public void removePlayerFromDatabase(String email) {
+        String playerKey = email.replace(".", "_");
+        DatabaseReference playerRef = db_ref.child("online_players").child(playerKey);
+
+        playerRef.runTransaction(new Transaction.Handler() {
+            @NonNull
             @Override
-            public void onSuccess(Void aVoid) {
-                Log.d("Firebase", "Player node removed successfully.");
+            public Transaction.Result doTransaction(@NonNull MutableData mutableData) {
+                mutableData.setValue(null);
+                return Transaction.success(mutableData);
             }
-        }).addOnFailureListener(new OnFailureListener() {
+
             @Override
-            public void onFailure(@NonNull Exception e) {
-                Log.e("Firebase", "Error removing player node", e);
+            public void onComplete(DatabaseError databaseError, boolean committed, DataSnapshot dataSnapshot) {
+                if (databaseError != null) {
+                    Log.e("Firebase", "Error removing player node", databaseError.toException());
+                } else {
+                    Log.d("Firebase", "Player node removed successfully.");
+                }
             }
         });
-
     }
 
 
@@ -176,7 +190,7 @@ public class Database {
     void update_player_loc_db(Player player, double lat, double lon) {
 
 
-        if (this.get_Player_ref() != null) {
+        if (this.getPlayerRef() != null) {
             // updateChildren method in Firebase Realtime Database requires a Map
             // to specify the fields to be updated
             Map<String, Object> updates = new HashMap<>();
@@ -188,6 +202,89 @@ public class Database {
 
 
     }
+
+    // In your Database class
+    public void listenForNewOnlinePlayers(MapView mapview) {
+        DatabaseReference onlinePlayersRef = get_db_ref().child("online_players");
+
+        onlinePlayersRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                Player newPlayer = dataSnapshot.getValue(Player.class);
+                if (newPlayer != null) {
+                    newPlayer.setPlayer_key(dataSnapshot.getKey());
+                    newPlayer.setEmail(dataSnapshot.getKey().replace("_", "."));
+                    newPlayer.setPlayer_marker(newPlayer.create_player_marker(mapview, newPlayer));
+                    newPlayer.setName(dataSnapshot.child("name").getValue(String.class));
+                    Boolean isOnMap = dataSnapshot.child("is_on_map").getValue(Boolean.class);
+                    newPlayer.setIs_on_map(isOnMap != null ? isOnMap : true);
+                    if (Player.online_playerList == null) {
+                        Player.online_playerList = new ArrayList<>();
+                    }
+                    if (newPlayer!=null)
+                    {
+                        Player.online_playerList.add(newPlayer);
+                    }
+                    Log.d("Database", "New player added: " + newPlayer.getEmail());
+                    // Update the map view
+                    if(newPlayer.getPlayer_marker()!=null){
+                    mapview.getOverlays().add(newPlayer.getPlayer_marker());
+                    mapview.invalidate();
+                }
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                // Handle child changed
+
+
+
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d("Database", "Player removed: " + dataSnapshot.getKey());
+                //Player deletedPlayer = dataSnapshot.getValue(Player.class);
+
+                    //deletedPlayer.setPlayer_key(dataSnapshot.getKey());
+                    mapview.getOverlays().remove(Player.getPlayerMarkerMap().get(dataSnapshot.getKey()));
+                    //delete the java map object
+                    Player.getPlayerMarkerMap().remove(dataSnapshot.getKey());
+
+                mapview.invalidate();
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
+
+                Log.d("Database", "Player moved: " + dataSnapshot.getKey());
+
+                //update in object by key: create a method to map object with key
+                //.......//
+                GeoPoint new_coordinates=new GeoPoint(dataSnapshot.child("latitude").getValue(Double.class), dataSnapshot.child("longitude").getValue(Double.class));
+                Marker marker_to_update=(Marker) Player.getPlayerMarkerMap().get(dataSnapshot.getKey());
+
+                //update object on map layer == update the marker
+                marker_to_update.setPosition(new_coordinates);
+                // Handle child moved
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Database", "Error listening for new online players", databaseError.toException());
+            }
+        });
+    }
+
+
+
+
+
 }
+
+
 
 

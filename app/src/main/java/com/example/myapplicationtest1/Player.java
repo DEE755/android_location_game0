@@ -1,11 +1,17 @@
 package com.example.myapplicationtest1;
 
+import android.util.Log;
+
+import com.google.firebase.database.DatabaseReference;
+
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Player {
 
@@ -22,6 +28,36 @@ public class Player {
     private int rank;
 
     static int player_counter=0;
+
+    private DatabaseReference playerRef_to_db;
+
+    public DatabaseReference getPlayerRef_to_db(){
+        return this.playerRef_to_db;
+    }
+
+
+    //A map to store the player's key and the corresponding marker
+    //it is way more efficient to store the markers in a map than in a list for searching purposes
+    //(PS: the word 'Map' isn't related to any geographic map it is a data structure in java, like a dictionary in python and nothing linked to a geographic map or any GIS thing)
+    // Static map to store player keys and their corresponding markers
+    private static Map<String, Marker> playerMarkerMap = new HashMap<>();
+
+    // Getters and setters for player properties
+    // ...
+
+    // Static methods to interact with the playerMarkerMap
+    public static void addPlayerMarker(String key, Marker marker) {
+        playerMarkerMap.put(key, marker);
+    }
+
+    public static Map getPlayerMarkerMap() {
+        return playerMarkerMap;
+    }
+
+    public static void removePlayerMarker(String key) {
+        playerMarkerMap.remove(key);
+    }
+
 
     //FOR TEST PURPOSE:
     Marker Player_marker =null;
@@ -71,6 +107,8 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
 
 
         this.setPlayer_marker(player_marker);
+//add to the java map:
+        Player.playerMarkerMap.put(this.getPlayer_key(), player_marker);
 
         return player_marker;
 
@@ -84,7 +122,7 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
 
     public Player(){}
 
-    public Player(String name, double latitude, double longitude, String email) {
+    public Player(String name, double latitude, double longitude, String email, Database db) {
         this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -93,6 +131,19 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
         this.Player_key =email.replace(".", "_");
         this.rank=0;
         this.is_on_map =false;
+
+        try
+        {
+            //this.playerRef_to_db = db.get_db_ref().child("online_players").child(email);
+        }
+
+        catch(ArithmeticException e)//it does go there at some point lets understand why
+        {
+            Log.e("Player", "Error in setting playerRef_to_db");
+        }
+
+
+
 
 
 
