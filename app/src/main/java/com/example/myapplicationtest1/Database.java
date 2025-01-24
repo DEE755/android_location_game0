@@ -37,14 +37,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Objects;
 
 
 public class Database {
 
     private DatabaseReference db_ref;
 
-    public DatabaseReference  getDatabaseReference() {
+    public DatabaseReference getDatabaseReference() {
         return db_ref;
     }
 
@@ -76,14 +76,31 @@ public class Database {
         this.Player_ref = Player_ref;
     }
 
-    void add_player_to_db(Player player) {
+    void add_player_to_db(Player player, MapView mapview) {
 
         //CREATE A KEY THAT IS THE EMAIL BUT WITHOUT . BECAUSE FIREBASE DOESNT ALLOW DOTS IN KEYS
         String player_key = player.getEmail().replace(".", "_");
-        db_ref.child("online_players").child(player_key).setValue(player);
-
-        //keep the database path for the player in the player object
-        setPlayer_ref(db_ref.child("online_players").child(player_key));
+        db_ref.child("online_players").child(player_key).setValue(player)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Action to perform on success
+                        Log.d("Database", "Player added successfully.");
+                        //keep the database path for the player in the player object
+                        Log.d("prints", "arrived before line 90 for player:" + player.getName());
+                        setPlayer_ref(db_ref.child("online_players").child(player_key));
+                        Log.d("prints", "arrived to line 90 for player:" + player.getName()+"\nThe ref is: "+player.getPlayerRefToDb());
+                        //while(player.getPlayerRefToDb()==null){Log.d("Database", "Waiting for ref to update");}
+                        listenForObjectsToCollect(player, mapview);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Action to perform on failure
+                        Log.e("Database", "Failed to add player", e);
+                    }
+                });
 
 
         //map_long_lat.put("latitude", player.getLatitude());
@@ -98,9 +115,9 @@ public class Database {
 
     //Firebase doesnt always delete well the player
     //this method does a transaction to delete the player it works a little bit better but still not 100%
-    public void removePlayerFromDatabase(String email) {
-        String playerKey = email.replace(".", "_");
-        DatabaseReference playerRef = db_ref.child("online_players").child(playerKey);
+    public void removePlayerFromDatabase(String playerKey) {
+        //String playerKey = email.replace(".", "_");
+        DatabaseReference playerRef = this.db_ref.child("online_players").child(playerKey);
 
         playerRef.runTransaction(new Transaction.Handler() {
             @NonNull
@@ -122,7 +139,6 @@ public class Database {
     }
 
 
-
     //fetch player from database and create a Player java object for it
     //!! This is the only way BECAUSE OF ASYNCHRONOUS behavior of Firebase, when the data is ready only we can fetch it so we need CALLBACK
     // Method to fetch all players from the "online_players" node
@@ -131,13 +147,15 @@ public class Database {
     // In Database.java
 
     public void fetchAllPlayers(final PlayersCallback callback, MapView mapview, boolean flag_created, final Runnable onComplete) {
-        if (flag_created) { return; }
+        if (flag_created) {
+            return;
+        }
         DatabaseReference playersRef = db_ref.child("online_players");
 
         playersRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-               // List<Player> playersList = new ArrayList<>();
+                // List<Player> playersList = new ArrayList<>();
                 if (Player.online_playerList == null) {
                     Player.online_playerList = new ArrayList<>();
                 } else if (!Player.online_playerList.isEmpty()) {
@@ -179,9 +197,9 @@ public class Database {
     // Callback interface
     public interface PlayersCallback {
         void onPlayersFetched(List<Player> players);
+
         void onError(Exception e);
     }
-
 
 
     //the Player field is for testing since we dont really update others players location
@@ -204,7 +222,7 @@ public class Database {
     }
 
     // In your Database class
-    public void listenForNewOnlinePlayers(MapView mapview) {
+    public void listenForNewOnlinePlayers(MapView mapview, Player local_player) {
         DatabaseReference onlinePlayersRef = get_db_ref().child("online_players");
 
         onlinePlayersRef.addChildEventListener(new ChildEventListener() {
@@ -212,6 +230,13 @@ public class Database {
             public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
                 Player newPlayer = dataSnapshot.getValue(Player.class);
                 if (newPlayer != null) {
+                    try {
+                    if (Objects.equals(newPlayer.getPlayer_key(), local_player.getPlayer_key()))
+                    {return;}
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+
                     newPlayer.setPlayer_key(dataSnapshot.getKey());
                     newPlayer.setEmail(dataSnapshot.getKey().replace("_", "."));
                     newPlayer.setPlayer_marker(newPlayer.create_player_marker(mapview, newPlayer));
@@ -221,24 +246,21 @@ public class Database {
                     if (Player.online_playerList == null) {
                         Player.online_playerList = new ArrayList<>();
                     }
-                    if (newPlayer!=null)
-                    {
+                    if (newPlayer != null) {
                         Player.online_playerList.add(newPlayer);
                     }
                     Log.d("Database", "New player added: " + newPlayer.getEmail());
                     // Update the map view
-                    if(newPlayer.getPlayer_marker()!=null){
-                    mapview.getOverlays().add(newPlayer.getPlayer_marker());
-                    mapview.invalidate();
-                }
+                    if (newPlayer.getPlayer_marker() != null) {
+                        mapview.getOverlays().add(newPlayer.getPlayer_marker());
+                        mapview.invalidate();
+                    }
                 }
             }
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
                 // Handle child changed
-
-
 
 
             }
@@ -248,10 +270,10 @@ public class Database {
                 Log.d("Database", "Player removed: " + dataSnapshot.getKey());
                 //Player deletedPlayer = dataSnapshot.getValue(Player.class);
 
-                    //deletedPlayer.setPlayer_key(dataSnapshot.getKey());
-                    mapview.getOverlays().remove(Player.getPlayerMarkerMap().get(dataSnapshot.getKey()));
-                    //delete the java map object
-                    Player.getPlayerMarkerMap().remove(dataSnapshot.getKey());
+                //deletedPlayer.setPlayer_key(dataSnapshot.getKey());
+                mapview.getOverlays().remove(Player.getPlayerMarkerMap().get(dataSnapshot.getKey()));
+                //delete the java map object
+                Player.getPlayerMarkerMap().remove(dataSnapshot.getKey());
 
                 mapview.invalidate();
 
@@ -261,11 +283,12 @@ public class Database {
             public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
 
                 Log.d("Database", "Player moved: " + dataSnapshot.getKey());
+                //TODO MOVE TO ONCHILD CHANGE RATHER THAN HERE
 
                 //update in object by key: create a method to map object with key
                 //.......//
-                GeoPoint new_coordinates=new GeoPoint(dataSnapshot.child("latitude").getValue(Double.class), dataSnapshot.child("longitude").getValue(Double.class));
-                Marker marker_to_update=(Marker) Player.getPlayerMarkerMap().get(dataSnapshot.getKey());
+                GeoPoint new_coordinates = new GeoPoint(dataSnapshot.child("latitude").getValue(Double.class), dataSnapshot.child("longitude").getValue(Double.class));
+                Marker marker_to_update = (Marker) Player.getPlayerMarkerMap().get(dataSnapshot.getKey());
 
                 //update object on map layer == update the marker
                 marker_to_update.setPosition(new_coordinates);
@@ -279,10 +302,75 @@ public class Database {
         });
     }
 
+    //when it detects that the list of objects' been added to the localPlayer
+    //cascade of listening
+    public void listenForObjectsToCollect(Player localPlayer, MapView mapview) {
+        DatabaseReference objectsRef = get_db_ref().child("online_players").child(localPlayer.getPlayer_key()).child("list_of_objects_to_collect");
+Log.d("prints", "db ref for objects of " + localPlayer.getName() + " is :" +objectsRef);
+        objectsRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                Object_to_collect object = dataSnapshot.getValue(Object_to_collect.class);
+
+                // Update the field "ObjectDelivered" to true
+                //in obj
+                localPlayer.setObjectDeliveredStatus(true);
+
+                //in db
+                objectsRef.getParent().child("ObjectDelivered").setValue(true);
+
+                if (object != null) {
+
+                    List<Object_to_collect> objects = localPlayer.getList_of_objects_to_collect();
+                    if (objects == null) {
+
+                        objects = new ArrayList<>();
+                        localPlayer.setList_of_objects_to_collect(objects);
+                    }
+                    Log.d("objects", "nonnul");
+                    objects.add(object);
+                    Log.d("Database", "Object added: " + object.toString());
+
+                    //localPlayer.fetchObjectsToCollect(this.firebase_database;
+                    for(Object_to_collect obj: localPlayer.getList_of_objects_to_collect())
+                    {
+
+                        obj.create_object_marker(mapview);
+                    }
+
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
+                // Handle child changed if necessary
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Object_to_collect object = dataSnapshot.getValue(Object_to_collect.class);
+                if (object != null) {
+                    List<Object_to_collect> objects = localPlayer.getList_of_objects_to_collect();
+                    if (objects != null) {
+                        objects.remove(object);
+                        Log.d("Database", "Object removed: " + object.toString());
+                    }
+                }
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
+                // Handle child moved if necessary
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Database", "Error listening for objects to collect", databaseError.toException());
+            }
+        });
 
 
-
-
+    }
 }
 
 

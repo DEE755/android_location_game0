@@ -2,16 +2,21 @@ package com.example.myapplicationtest1;
 
 import android.util.Log;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 
 public class Player {
 
@@ -23,17 +28,33 @@ public class Player {
     private int currentScore; // Player's current score
 
     private String ref_to_logo;
+
+    private boolean ObjectDeliveredStatus;
+
+    public void setObjectDeliveredStatus(boolean status)
+    {
+        this.ObjectDeliveredStatus =status;
+    }
+
+    public boolean getObjectDeliveredStatus()
+    {
+        return this.ObjectDeliveredStatus;
+    }
     public static List<Player> online_playerList = new ArrayList<>();
 
     private int rank;
 
     static int player_counter=0;
 
-    private DatabaseReference playerRef_to_db;
+    private DatabaseReference PlayerRefToDb;
 
-    public DatabaseReference getPlayerRef_to_db(){
-        return this.playerRef_to_db;
+    public DatabaseReference getPlayerRefToDb(){
+        return this.PlayerRefToDb;
     }
+
+    public void setPlayerRefToDb(DatabaseReference playerRefToDb)
+    {this.PlayerRefToDb =playerRefToDb;}
+
 
 
     //A map to store the player's key and the corresponding marker
@@ -48,6 +69,39 @@ public class Player {
     // Static methods to interact with the playerMarkerMap
     public static void addPlayerMarker(String key, Marker marker) {
         playerMarkerMap.put(key, marker);
+    }
+
+    private List<Object_to_collect> list_of_objects_to_collect;
+
+    public List<Object_to_collect> getList_of_objects_to_collect() {
+        return list_of_objects_to_collect;
+    }
+
+    public void setList_of_objects_to_collect(List<Object_to_collect> list_of_objects_to_collect) {
+        this.list_of_objects_to_collect = list_of_objects_to_collect;
+    }
+
+    public void fetchObjectsToCollect(Database db) {
+        // Fetch objects to collect from the database
+        List<Object_to_collect> objects = new ArrayList<>();
+        DatabaseReference objectsRef = db.getPlayerRef().getRef().child("objects_to_collect");
+
+        objectsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                List<Object_to_collect> objects = new ArrayList<>();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Object_to_collect object = snapshot.getValue(Object_to_collect.class);
+                    objects.add(object);
+                }
+                setList_of_objects_to_collect(objects);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Player", "Error fetching objects to collect", databaseError.toException());
+            }
+        });
     }
 
     public static Map getPlayerMarkerMap() {
@@ -131,7 +185,12 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
         this.Player_key =email.replace(".", "_");
         this.rank=0;
         this.is_on_map =false;
+        this.ObjectDeliveredStatus =false;
+        this.list_of_objects_to_collect =new ArrayList<>();
+        this.list_of_objects_to_collect.add( new Object_to_collect());
 
+        this.PlayerRefToDb =null;
+        //Delete later
         try
         {
             //this.playerRef_to_db = db.get_db_ref().child("online_players").child(email);

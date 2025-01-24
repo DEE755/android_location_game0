@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
 
-    private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il",mDatabase); //this is the 'client' player (the device owner)
+    //private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il",mDatabase); //this is the 'client' player (the device owner)
 
 
 
@@ -153,9 +153,9 @@ public class MainActivity extends AppCompatActivity {
 
     private Player Michael_Jackson_player =new Player("Michael Jackson",32.0240,34.7741,"mjmusic@sony.com",mDatabase);
 
-    private Player Spiderman_player =new Player("Peter Parker",32.0248,34.7720,"peter_parker@gmail.com",mDatabase);
+    private Player Spiderman_player =new Player("Peter Parker",32.0853,34.7818,"peter_parker@gmail.com",mDatabase);
 
-    private Player Batman_player =new Player("Bruce Wayne",32.0268,34.774,"bruce-wayne@ghotam.com",mDatabase);
+    private Player Batman_player =new Player("Bruce Wayne",31.8771,34.7385,"bruce-wayne@ghotam.com",mDatabase);
 
     private Player Superman_player =new Player("Clark Kent",32.01205,34.76,"Clark-Kent@dc.com",mDatabase);
 
@@ -176,33 +176,6 @@ public class MainActivity extends AppCompatActivity {
 
     //private FirebaseAnalytics mFirebaseAnalytics;
 
-
-
-
-
-    private void readCsvFile(InputStream inputStream) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            String line;
-            int nameColumnIndex = -1;
-            boolean isFirstRow = true;
-
-            while ((line = reader.readLine()) != null) {
-                String[] values = line.split(",");
-
-                if (isFirstRow) {
-                    // Log the headers for reference
-                    Log.d("CSV", "Headers: " + String.join(", ", values));
-                    isFirstRow = false;
-                } else {
-                    // Log all columns for each row
-                    Log.d("CSV", "Row: " + String.join(", ", values));
-
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     private void show_current_position(double zoom_factor, Long speed){//both displays and output it
 
@@ -228,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
         IMapController mapController = mapview.getController();
         //mapController.setZoom(zoom_factor);
 
-            mapController.animateTo(new GeoPoint(48.8588443, 2.2943506), zoom_factor, speed);
+            mapController.animateTo(new GeoPoint(32.08, 34.7), zoom_factor, speed);
 
     }
     private int l=0;
@@ -262,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
         // Set button initially disabled until location is fetched
         playsoundButton.setEnabled(false);
         playsoundButton.setText("Fetching Location...");
@@ -289,10 +263,30 @@ public class MainActivity extends AppCompatActivity {
                     // Reset button text after 4 seconds
                     playsoundButton.setText("GAME STARTING");
 
-                    //adding local player to the game server:
-                    client_player.setLatitude(userLatitude);
-                    client_player.setLongitude(userLongitude);
-                    mDatabase.add_player_to_db(client_player);
+
+                    //ACTUAL LOCAL PLAYER:
+                    //first loc is sent to the server after pressing the start button then updated here
+                    MyService.getClientPlayer().setLatitude(userLatitude);
+                    MyService.getClientPlayer().setLongitude(userLongitude);
+                    // Adding the client_player to the game db
+                    new Handler().postDelayed(() -> {
+                        Player clientPlayer = MyService.getClientPlayer();
+                        if (clientPlayer != null) {
+                            mDatabase.add_player_to_db(clientPlayer, mapview);
+                        } else {
+                            Log.e("MainActivity", "Client player is null");
+                        }
+                    }, 0); // Delay to ensure service is started
+
+                    //update the test players marker:
+
+                    //client_player.setPlayerref_to_db(mDatabase.get_db_ref().child("online_players").child(client_player.getPlayer_key()));
+
+
+                    //TODO: we probably need a listener or a flag to check that the list of objects from the server is ready when this line happens
+                    //fetch objects locations for the client player
+                    //replaced by listener actions
+                    //client_player.fetchObjectsToCollect(mDatabase);
 
 
                     handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
@@ -349,7 +343,12 @@ public class MainActivity extends AppCompatActivity {
 
         //set the new players listener:
 
-        mDatabase.listenForNewOnlinePlayers(mapview);
+
+
+        //mDatabase.listenForNewOnlinePlayers(mapview, MyService.getClientPlayer());
+
+
+
 
         // Enable disk persistence
         //FirebaseDatabase.getInstance().setPersistenceEnabled(false);
@@ -372,7 +371,16 @@ public class MainActivity extends AppCompatActivity {
                     playsoundButton.setEnabled(true);
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
                     //Bus markers and put them on the mapview
-                    create_all_bus_Markers(inputStream);
+                    //create_all_bus_Markers(inputStream);
+
+//TODO: SOMETHING MAKES CRASH VERIFY THE ORDER OF HOW THINGS HAPPENS PROBABLY ORDER WRONG THEN SOMETHING IS NULL
+                           // there is the fetchObjectsToCollect method that is called before
+
+
+
+
+
+
                     //The players are fetch from the DB to a java_player object
                     //This is a bit complicated to understand: ASYNCHRONOUS BEHAVIOR CALLBACKS
                     //we pass the mapview to be able to create the markers
@@ -400,56 +408,55 @@ public class MainActivity extends AppCompatActivity {
 
                 else {
 
-                    //ACTUAL LOCAL PLAYER:
-                    //first loc is sent to the server after pressing the start button then updated here
-                    mDatabase.update_player_loc_db(client_player, userLatitude, userLongitude);
+                    mDatabase.update_player_loc_db(MyService.getClientPlayer(), userLatitude, userLongitude);
 
-                    //update the test players marker:
 
                     //Location_utils.updatePlayersMarkers();
 
                     mapview.invalidate();
                 }
 
+
                 //SIMULATION OF PLAYERS ENTERING THE GAME
 
-                    switch (p){
+                    /*switch (p){
                         case 15:
-                            mDatabase.add_player_to_db(Spiderman_player);
+                            //mDatabase.add_player_to_db(Spiderman_player,mapview);
 
                             Log.d("MainActivity", "Michael J entered the online  db");
                             break;
 
                         case 30:
-                            mDatabase.add_player_to_db(Michael_Jackson_player);
+                            //mDatabase.add_player_to_db(Michael_Jackson_player, mapview);
 
                             break;
 
                         case 50:
-                            mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
+                            //mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
 
                             Log.d("MainActivity", "Spiderman entered the online db");
                             break;
 
 
                         case 75:
-                            mDatabase.add_player_to_db(Batman_player);
+                            //mDatabase.add_player_to_db(Batman_player, mapview);
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
 
                         case 85:mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
+                            break;
 
                         case 150:
 
-                            mDatabase.add_player_to_db(Superman_player);
+                            mDatabase.add_player_to_db(Superman_player, mapview);
 
 
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
                         case 200:
-                            mDatabase.add_player_to_db(Harry_Potter_player);
+                            mDatabase.add_player_to_db(Harry_Potter_player, mapview);
                             Log.d("MainActivity", "New player entered the online db");
                             break;
 
@@ -457,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
                             mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
                             break;
                         case 250:
-                            mDatabase.add_player_to_db(Mary_Poppins_player);
+                            mDatabase.add_player_to_db(Mary_Poppins_player, mapview);
 
                             Log.d("MainActivity", "New player entered the online db");
                             break;
@@ -465,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
                         case 270: mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
 
                         case 300:
-                            mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());
+                            mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());*/
 
                             // Remove the 'online_players' node
                             /*mDatabase.get_db_ref().child("online_players").removeValue()
@@ -483,25 +490,25 @@ public class MainActivity extends AppCompatActivity {
                                         Log.e("Firebase", "Error deleting online_players node", e);
                                     }
                                 });*/
-                        break;
+                //break;
                     }
 
 
-                p=p%330 +1;
+            //p=p%330 +1;
 
 
                 //SIMULATION: UPDATE test_players location
-                if (!Player.online_playerList.isEmpty()) {
-                    for (Player test_player : Player.online_playerList) {
+                //if (!Player.online_playerList.isEmpty()) {
+                    //for (Player test_player : Player.online_playerList) {
                         //test_player.setLatitude(test_player.getLatitude() + test_step);
                         //test_player.setLongitude(test_player.getLongitude() - test_step);
                         //add here a if the player is still in the game, then because else it creates a new partial player thats bad.
                         //mDatabase.update_player_loc_db(test_player, test_player.getLatitude()+ test_step, test_player.getLongitude()- test_step);
-                    }
-                }
+                    //}
+                //}
 
 
-            }
+           // }
 
             @Override
             public void onError(String errorMsg) {
