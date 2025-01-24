@@ -14,18 +14,65 @@ import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Map;
 
 
 public class Location_utils {
+
+    public static Marker closest_marker()//should be nicer, use minqueue for distance ? use min detection
+    {int distance, min_distance=9999999;
+        Marker min_marker = null;
+        for(Map.Entry<String, Marker> entry : Object_to_collect.getObject_marker_map().entrySet() ){
+            distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), entry.getValue().getPosition());
+//test
+            if (distance<min_distance)
+            {
+                min_distance=distance;
+                min_marker=entry.getValue();
+            }
+        }
+        return min_marker;
+    }
+
+    public static GeoPoint getMyCurrentGeoPoint() {
+        if (UserLatitude == 0.0 && UserLongitude == 0.0) {
+            // Either return null or a default location
+            return new GeoPoint(0.0, 0.0);
+        } else {
+            return new GeoPoint(UserLatitude, UserLongitude);
+        }
+    }
+
+
+
+    private static double UserLatitude;
+    private static double UserLongitude;
+
+    public static double getUserLatitude() {
+        return UserLatitude;
+    }
+
+    public static void setUserLatitude(double userLatitude) {
+        UserLatitude = userLatitude;
+    }
+
+    public static double getUserLongitude() {
+        return UserLongitude;
+    }
+
+    public static void setUserLongitude(double userLongitude) {
+        UserLongitude = userLongitude;
+    }
+
     // list for created markers
     static List<Marker> PlayersmarkerList = new ArrayList<>();
+
     static Marker create_and_place_player_marker(Player player_, MapView mapview, Player client_player) {
         // Create and position the marker
         Marker player_marker = player_.create_player_marker(mapview, player_);
 
         // determining the distance from the client player
-        double distanceInMeters = DistanceCalculator.calculateDistance(new GeoPoint(player_.getLatitude(),player_.getLongitude()), new GeoPoint(client_player.getLatitude(), client_player.getLongitude()));
+        double distanceInMeters = DistanceCalculator.calculateDistance(new GeoPoint(player_.getLatitude(), player_.getLongitude()), new GeoPoint(client_player.getLatitude(), client_player.getLongitude()));
 
         // Customize marker title
         player_marker.setTitle(
@@ -37,7 +84,7 @@ public class Location_utils {
 
         // ADD THE PICTURE OF EACH PLAYER HERE (fetch the path from database:
         //change after to something real:
-        switch (player_.getName()){
+        switch (player_.getName()) {
             case "Mary Poppins":
                 player_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.mary_poppins_logo));
                 break;
@@ -53,11 +100,11 @@ public class Location_utils {
                 player_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.peter_parker_logo));
                 break;
 
-                case "Michael Jackson":
+            case "Michael Jackson":
                 player_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.michael_jackson_logo));
                 break;
 
-                case "Bruce Wayne":
+            case "Bruce Wayne":
                 player_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bruce_wayne_logo));
                 break;
 
@@ -72,7 +119,6 @@ public class Location_utils {
 
         return player_marker;
     }
-
 
 
     void place_marker_on_map(Player player_, Player client_player, MapView mapview) {
@@ -131,5 +177,36 @@ public class Location_utils {
         }
     }
 
+    public static class DistanceCalculator {
 
+        //test
+        private static final double EARTH_RADIUS = 6371000; // Earth's radius in meters
+
+        /**
+         * Calculates the distance between two geographical points using the haversine formula.
+         *
+         * @param point1 The first geographical point.
+         * @param point2 The second geographical point.
+         * @return The distance in meters.
+         */
+        public static int calculateDistance(GeoPoint point1, GeoPoint point2) {
+            double lat1 = Math.toRadians(point1.getLatitude());
+            double lon1 = Math.toRadians(point1.getLongitude());
+            double lat2 = Math.toRadians(point2.getLatitude());
+            double lon2 = Math.toRadians(point2.getLongitude());
+
+            double deltaLat = lat2 - lat1;
+            double deltaLon = lon2 - lon1;
+
+            double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+                    Math.cos(lat1) * Math.cos(lat2) *
+                            Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+
+            double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return (int) (EARTH_RADIUS * c);
+        }
+
+
+    }
 }

@@ -1,10 +1,16 @@
 package com.example.myapplicationtest1;
 
+import static com.example.myapplicationtest1.Location_utils.getUserLatitude;
+import static com.example.myapplicationtest1.Location_utils.getUserLongitude;
+import static com.example.myapplicationtest1.Location_utils.setUserLatitude;
+import static com.example.myapplicationtest1.Location_utils.setUserLongitude;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -14,6 +20,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import java.util.Map;
 import java.util.Random;
 
 import androidx.annotation.NonNull;
@@ -23,10 +30,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.myapplicationtest1.databinding.ActivityMainBinding;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.database.FirebaseDatabase;
 
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -57,6 +61,9 @@ import java.util.Date;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+
+
+
 
 //TODO//TODO IT SEEMS THAT THE WRONG PLAYER IS REMOVED FROM THE DATABASE THEN IT IS CREATED/DELETED AND SOME STAYS IN THE DATABASE
 //TODO DELETING ALL AT ONCE SEEMS NOT TO WORK
@@ -109,8 +116,7 @@ public class MainActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationClient;
 
     // Member variables to store local latitude and longitude
-    private double userLatitude;
-    private double userLongitude;
+
 
     private boolean executed = false;
 
@@ -250,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-                ToneGenerator Tonegen=new ToneGenerator();
+                //Sound.ToneGenerator Tonegen=new Sound.ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
 
                 //Tonegen.toneGenerator(200,4000,(int)zoom_speed/1000);
@@ -258,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if(GameStartedFlag==false) {
                     show_current_position(15.0, 1000L);
-                    Tonegen.toneGenerator(400, 4000, (int) zoom_speed / 1000);
+                    Sound.ToneGenerator.toneGenerator(400, 4000, (int) zoom_speed / 1000);
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
                     playsoundButton.setText("GAME STARTING");
@@ -266,8 +272,8 @@ public class MainActivity extends AppCompatActivity {
 
                     //ACTUAL LOCAL PLAYER:
                     //first loc is sent to the server after pressing the start button then updated here
-                    MyService.getClientPlayer().setLatitude(userLatitude);
-                    MyService.getClientPlayer().setLongitude(userLongitude);
+                    MyService.getClientPlayer().setLatitude(getUserLatitude());
+                    MyService.getClientPlayer().setLongitude(getUserLongitude());
                     // Adding the client_player to the game db
                     new Handler().postDelayed(() -> {
                         Player clientPlayer = MyService.getClientPlayer();
@@ -299,15 +305,28 @@ public class MainActivity extends AppCompatActivity {
                     //update distance from bus:
                     updateMarkerDistances();
 
-                    if (closest_item() <= 8) {
+                    Marker min_marker=Location_utils.closest_marker();
+
+                    if (Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint()) <= 150){//TODO: maybe doesnt work in term of distance {
                         playsoundButton.setText("CONGRATS\n +100POINTS");
-                        Tonegen.toneGenerator(4000, 500, (int) zoom_speed / 1000);
+                        Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
+                        MyService.getClientPlayer().addScore(100);
+                        //MyService.getClientPlayer().getPlayerRefToDb().child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+                        mDatabase.get_db_ref().child("online_players").child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+                        //set logo to validation color
+                        min_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
+                        //ADD A FLAG TO ALREADY_TAKEN or remove from db
+//TODO either add on the object + update full object or add on db the increase of score
+                        //TODO TODO: PREVENT THE SAME ITEM TO BE TAKEN MORE THEN ONE TIME ADD A FLAG
+
 
                     } else {
                         playsoundButton.setText("NO ITEM HERE");
-                        Tonegen.toneGenerator(800, 500, (int) zoom_speed / 1000);
+                        Sound.ToneGenerator.toneGenerator(800, 500, (int) zoom_speed / 1000);
                         handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
+                        Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint())));
                     }
+
                 }
 
                 //ANALYTICS:
@@ -360,8 +379,8 @@ public class MainActivity extends AppCompatActivity {
         getCurrentLocation(new MyLocationCallback() {
             @Override
             public void onLocationResult(LocationData locationData) {
-                userLatitude = locationData.getLatitude();
-                userLongitude = locationData.getLongitude();
+                setUserLatitude(locationData.getLatitude());
+                setUserLongitude(locationData.getLongitude());
 
 
 
@@ -408,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
 
                 else {
 
-                    mDatabase.update_player_loc_db(MyService.getClientPlayer(), userLatitude, userLongitude);
+                    mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
                     //Location_utils.updatePlayersMarkers();
@@ -583,14 +602,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public GeoPoint getMyCurrentGeoPoint() {
-        if (userLatitude == 0.0 && userLongitude == 0.0) {
-            // Either return null or a default location
-            return new GeoPoint(0, 0);
-        } else {
-            return new GeoPoint(userLatitude, userLongitude);
-        }
-    }
+
 
 
     private void create_all_bus_Markers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
@@ -644,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
 
                 temp_marker.setPosition(temp_point);
 
-                double distanceInMeters = DistanceCalculator.calculateDistance(temp_point, new GeoPoint(userLatitude,userLongitude));
+                double distanceInMeters = Location_utils.DistanceCalculator.calculateDistance(temp_point, new GeoPoint(getUserLatitude(),getUserLongitude()));
 
                 // Customize marker title
                 temp_marker.setTitle(
@@ -671,10 +683,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateMarkerDistances() {
-        GeoPoint myCurrentPoint = new GeoPoint(userLatitude, userLongitude);
+        GeoPoint myCurrentPoint = new GeoPoint(getUserLatitude(), getUserLongitude());
         for (Marker marker : markerList) {
             GeoPoint tempPoint = marker.getPosition();
-            double distance = DistanceCalculator.calculateDistance(tempPoint, myCurrentPoint);
+            double distance = Location_utils.DistanceCalculator.calculateDistance(tempPoint, myCurrentPoint);
             String time=getCurrentTime();
             marker.setTitle("Bus Station - Distance: " + distance + " meters\n"+"Last Update" + time);
         }
@@ -688,18 +700,7 @@ public class MainActivity extends AppCompatActivity {
         return formatter.format(date);
     }
 
-    private int closest_item()//should be nicer, use minqueue for distance ? use min detection
-    {int distance, min_distance=9999999;
-        for(Marker marker : markerList ){
-            distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), marker.getPosition());
-//test
-            if (distance<min_distance)
-            {
-                min_distance=distance;
-            }
-        }
-        return min_distance;
-    }
+
 
     // In MainActivity.java
 
