@@ -1,10 +1,13 @@
 package com.example.myapplicationtest1;
 
+import static com.example.myapplicationtest1.Location_utils.create_and_place_player_marker;
+
 import android.util.Log;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.util.GeoPoint;
@@ -16,6 +19,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+//TIME BASED IMPORTS
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+
+
+
+
+
+
+
 
 
 public class Player {
@@ -45,6 +60,24 @@ public class Player {
     private int rank;
 
     static int player_counter=0;
+
+    private boolean is_active;
+
+    public void setIs_active(boolean is_active)
+    {
+        this.is_active =is_active;
+    }
+
+    public boolean getIs_active()
+    {
+        return this.is_active;
+    }
+
+    private int value;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+
+
 
     private DatabaseReference PlayerRefToDb;
 
@@ -132,14 +165,55 @@ public class Player {
     }
 
 
+
+    // Location_utils.java
+    public class Location_utils {
+        // Other methods and fields...
+
+        void fetchOnlinePlayersData(Database db, MapView mapview) {
+            DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("online_players");
+
+            playersRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    for (DataSnapshot playerSnapshot : dataSnapshot.getChildren()) {
+                        // Fetch part of the player's data
+                        String playerId = playerSnapshot.getKey();
+                        String playerName = playerSnapshot.child("name").getValue(String.class);
+                        Double playerLatitude = playerSnapshot.child("latitude").getValue(Double.class);
+                        Double playerLongitude = playerSnapshot.child("longitude").getValue(Double.class);
+
+                        Player player =new Player(playerName, playerLatitude, playerLongitude, playerId, db);
+                        // Add to map
+                        create_and_place_player_marker(player, mapview, MyService.getClientPlayer());
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    // Handle possible errors
+                    System.err.println("Error fetching data: " + databaseError.getMessage());
+                }
+            });
+        }
+    }
+
+
+
+
+
+
+
+
     public Marker create_player_marker(MapView mapView, Player player) {
+        Log.d("crash", "entered create_player_marker: ");
         Marker player_marker = new Marker(mapView);
         player_marker.setPosition(new GeoPoint(this.getLatitude(), this.getLongitude()));
         player_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
 
         // determining the distance from the client player
-        double distanceInMeters = Location_utils.DistanceCalculator.calculateDistance(new GeoPoint(this.getLatitude(),this.getLongitude()), new GeoPoint(player.getLatitude(), player.getLongitude()));
-
+        double distanceInMeters = com.example.myapplicationtest1.Location_utils.DistanceCalculator.calculateDistance(new GeoPoint(this.getLatitude(),this.getLongitude()), new GeoPoint(player.getLatitude(), player.getLongitude()));
+        Log.d("crash", "after distanceinmeters: ");
         // Customize marker title
         player_marker.setTitle(
                 this.getName() +
@@ -149,15 +223,23 @@ public class Player {
 
 
         //LOGO HANDLING
-try{
-        String logo_name =(player.name==null)? "default_logo":getRef_to_logo();
-        player.name =(player.name==null)? "found_null":player.name;
-        if (player.name=="Phone_owner(real_location_data)"){logo_name="default_logo";}
-        int resourceId = mapView.getContext().getResources().getIdentifier(logo_name, "drawable", mapView.getContext().getPackageName());
-        player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));}
+        try{
+            String logo_name =(player.name==null)? "default_logo":getRef_to_logo();
+           player.name =(player.name==null)? "found_null":player.name;
+            Log.d("crash", "logo_name: "+logo_name);
 
-catch(ArithmeticException e) { int resourceId = mapView.getContext().getResources().getIdentifier("default", "drawable", mapView.getContext().getPackageName());
-    player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));}
+            //if(logo_name=="phone_owner(real_location_data)_logo")
+            //{logo_name="harry_potter_logo";}
+
+            logo_name="harry_potter_logo";
+            int resourceId = mapView.getContext().getResources().getIdentifier(logo_name, "drawable", mapView.getContext().getPackageName());
+            player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));
+            Log.d("crash", "after logo handling: ");
+        }
+
+
+        catch(ArithmeticException e) { int resourceId = mapView.getContext().getResources().getIdentifier("default", "drawable", mapView.getContext().getPackageName());
+            player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));}
 
 
         this.setPlayer_marker(player_marker);
@@ -190,16 +272,7 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
         this.list_of_objects_to_collect.add( new Object_to_collect());
 
         this.PlayerRefToDb =null;
-        //Delete later
-        try
-        {
-            //this.playerRef_to_db = db.get_db_ref().child("online_players").child(email);
-        }
-
-        catch(ArithmeticException e)//it does go there at some point lets understand why
-        {
-            Log.e("Player", "Error in setting playerRef_to_db");
-        }
+        this.is_active=true;
 
 
 
@@ -311,6 +384,49 @@ catch(ArithmeticException e) { int resourceId = mapView.getContext().getResource
     boolean getIs_on_map(){
         return this.is_on_map;
     }
+
+
+
+    public void send_dead_man_check(Database db, Global_Utilities.Iterator iteration )
+    {
+
+
+        Runnable task = new Runnable() {
+            @Override
+
+
+            public void run() {
+
+                // Update the object
+                switch (iteration.increase()%2) {
+                    case 0:
+                        db.get_db_ref().child("online_players").child(getPlayer_key()).child("is_active").setValue(false);
+                        Log.d("Player", "triggered false" + iteration.getIterator_nb());
+
+                        break;
+                    case 1:
+                        db.get_db_ref().child("online_players").child(getPlayer_key()).child("is_active").setValue(true);
+                        Log.d("Player" , "triggered true "+ iteration.getIterator_nb());
+
+                        break;
+
+
+                }
+
+
+
+
+            }
+        };
+
+        // Schedule the task to run every 5 seconds
+        scheduler.scheduleWithFixedDelay(task, 0, 5, TimeUnit.SECONDS);
+    }
+
+    public void stopPeriodicUpdate() {
+        scheduler.shutdown();
+    }
+
 
 
 }

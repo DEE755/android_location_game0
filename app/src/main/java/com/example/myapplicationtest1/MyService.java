@@ -26,6 +26,8 @@ public class MyService extends Service {
         ClientPlayer = new Player("Phone_owner(real_location_data)", 0, 0, "test@hit.ac.il", mDatabase);
     }
 
+    //"Phone_owner(real_location_data)"
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Service logic here
@@ -42,13 +44,15 @@ public class MyService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d("MyService", "Service destroyed, removing player from database");
+        Log.d("Database", "Service destroyed, removing player from database");
         onQuitApp(ClientPlayer, mDatabase);
         super.onDestroy();
     }
 
     private void onQuitApp(Player player_to_remove, Database database) {
         DatabaseReference playerRef = database.get_db_ref().child("online_players").child(player_to_remove.getPlayer_key());
+    Log.d("Database", "Removing player: " + player_to_remove.getPlayer_key());
+
         playerRef.removeValue().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 Log.d("Database", "Player removed successfully: " + player_to_remove.getPlayer_key());

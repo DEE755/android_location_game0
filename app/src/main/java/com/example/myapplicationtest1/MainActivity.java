@@ -6,11 +6,11 @@ import static com.example.myapplicationtest1.Location_utils.setUserLatitude;
 import static com.example.myapplicationtest1.Location_utils.setUserLongitude;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,7 +20,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import java.util.Map;
 import java.util.Random;
 
 import androidx.annotation.NonNull;
@@ -151,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
 
     //private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il",mDatabase); //this is the 'client' player (the device owner)
 
-
+    private int iteration;
 
     //TEST PLAYERS:
     //we need to check why they appears at same location as the client player
@@ -213,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
     private int l=0;
 
 
+    @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -256,6 +256,11 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+            //Utilities initialization:
+            // Inside onCreate method
+            Global_Utilities utilities = new Global_Utilities();
+            Global_Utilities.Iterator iteration = new Global_Utilities.Iterator();
+
                 //Sound.ToneGenerator Tonegen=new Sound.ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
 
@@ -274,15 +279,42 @@ public class MainActivity extends AppCompatActivity {
                     //first loc is sent to the server after pressing the start button then updated here
                     MyService.getClientPlayer().setLatitude(getUserLatitude());
                     MyService.getClientPlayer().setLongitude(getUserLongitude());
+
+
                     // Adding the client_player to the game db
-                    new Handler().postDelayed(() -> {
+
                         Player clientPlayer = MyService.getClientPlayer();
                         if (clientPlayer != null) {
-                            mDatabase.add_player_to_db(clientPlayer, mapview);
+                            mDatabase.add_player_to_online_db(clientPlayer, mapview);
+
+                            //add to main db if not already there
+                            mDatabase.is_in_database(clientPlayer, new Database.PlayersCallback() {
+                                @Override
+                                public void onPlayersFetched(List<Player> players) {
+                                    // Not used in this context
+                                }
+
+                                @Override
+                                public void onError(Exception e) {
+                                    Log.e("Database", "Error checking if player is in database", e);
+                                }
+
+                                @Override
+                                public void onResult(boolean isInDatabase) {
+                                    Log.d("Database", "Player is in database: " + isInDatabase);
+                                    if (!isInDatabase) {
+                                        mDatabase.add_player_to_main_db(clientPlayer);
+                                        Log.d("Database", "Client player added to database");
+                                    }
+
+                                    clientPlayer.send_dead_man_check(mDatabase, iteration);
+                                    mDatabase.listenForNewOnlinePlayers(mapview, MyService.getClientPlayer());
+                                }
+                            });
                         } else {
                             Log.e("MainActivity", "Client player is null");
                         }
-                    }, 0); // Delay to ensure service is started
+
 
                     //update the test players marker:
 
@@ -306,13 +338,18 @@ public class MainActivity extends AppCompatActivity {
                     updateMarkerDistances();
 
                     Marker min_marker=Location_utils.closest_marker();
-
-                    if (Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint()) <= 150){//TODO: maybe doesnt work in term of distance {
+                    int distance=Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint());
+                    Log.d("distance", String.valueOf(min_marker.getPosition()));
+                    if (distance <= 300 + 960-240){//TODO: maybe doesnt work in term of distance {
                         playsoundButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
                         MyService.getClientPlayer().addScore(100);
                         //MyService.getClientPlayer().getPlayerRefToDb().child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
-                        mDatabase.get_db_ref().child("online_players").child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+
+                        //make crash
+                        Log.d("db_ref", String.valueOf(mDatabase.get_db_ref()));
+                        mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayer_key()).child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+
                         //set logo to validation color
                         min_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
                         //ADD A FLAG TO ALREADY_TAKEN or remove from db
@@ -345,8 +382,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // Permission already granted, proceed with getting location
             fetchLocation();
-
-
         }
 
         Context ctx = getApplicationContext();
@@ -438,60 +473,60 @@ public class MainActivity extends AppCompatActivity {
 
                 //SIMULATION OF PLAYERS ENTERING THE GAME
 
-                    /*switch (p){
-                        case 15:
-                            //mDatabase.add_player_to_db(Spiderman_player,mapview);
+                   // switch (p){
+                        //case 15:
+                          //  mDatabase.add_player_to_online_db(Spiderman_player,mapview);
 
-                            Log.d("MainActivity", "Michael J entered the online  db");
-                            break;
+                          //  Log.d("MainActivity", "Michael J entered the online  db");
+                        //    break;
 
-                        case 30:
-                            //mDatabase.add_player_to_db(Michael_Jackson_player, mapview);
+                    //    case 30:
+                         //   mDatabase.add_player_to_online_db(Michael_Jackson_player, mapview);
 
-                            break;
+                         //   break;
 
-                        case 50:
-                            //mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
+                       // case 50:
+                        //    mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
 
-                            Log.d("MainActivity", "Spiderman entered the online db");
-                            break;
+                        //    Log.d("MainActivity", "Spiderman entered the online db");
+                        //    break;
 
 
-                        case 75:
+                      //  case 75:
                             //mDatabase.add_player_to_db(Batman_player, mapview);
-                            Log.d("MainActivity", "New player entered the online db");
-                            break;
+                      //      Log.d("MainActivity", "New player entered the online db");
+                      //      break;
 
 
-                        case 85:mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
-                            break;
+                      //  case 85:mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
+                       //     break;
 
-                        case 150:
+                      //  case 150:
 
-                            mDatabase.add_player_to_db(Superman_player, mapview);
+                         //   mDatabase.add_player_to_online_db(Superman_player, mapview);
 
 
-                            Log.d("MainActivity", "New player entered the online db");
-                            break;
+                         //   Log.d("MainActivity", "New player entered the online db");
+                          //  break;
 
-                        case 200:
-                            mDatabase.add_player_to_db(Harry_Potter_player, mapview);
-                            Log.d("MainActivity", "New player entered the online db");
-                            break;
+                       // case 200:
+                         //   mDatabase.add_player_to_online_db(Harry_Potter_player, mapview);
+                         //   Log.d("MainActivity", "New player entered the online db");
+                         //   break;
 
-                        case 220:
-                            mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
-                            break;
-                        case 250:
-                            mDatabase.add_player_to_db(Mary_Poppins_player, mapview);
+                       // case 220:
+                           // mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
+                           // break;
+                        //case 250:
+                            //mDatabase.add_player_to_online_db(Mary_Poppins_player, mapview);
 
-                            Log.d("MainActivity", "New player entered the online db");
-                            break;
+                            //Log.d("MainActivity", "New player entered the online db");
+                            //break;
 
-                        case 270: mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
+                        //case 270: mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
 
-                        case 300:
-                            mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());*/
+                        //case 300:
+                            //mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());
 
                             // Remove the 'online_players' node
                             /*mDatabase.get_db_ref().child("online_players").removeValue()
@@ -605,82 +640,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    private void create_all_bus_Markers(InputStream inputStream)//REPLACE WITH DATABASE INSTEAD OF CSV
-    {
-
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            String line;
-            int nameColumnIndex = -1;
-
-
-            List<String[]> allRows = new ArrayList<>();
-            Random random = new Random();
-            boolean isFirstRow = true;
-
-            // Read all rows into a list
-            while ((line = reader.readLine()) != null) {
-                String[] values = line.split(",");
-
-                if (isFirstRow) {
-                    // Log the headers for reference
-                    Log.d("CSV", "Headers: " + String.join(", ", values));
-                    isFirstRow = false;
-                } else {
-                    allRows.add(values); // Add each row to the list
-                }
-            }
-
-            // Process up to 30 random rows
-            int i = 0;
-            int maxIterations = 30; // Max random selections
-            while (i < maxIterations) {
-                if (allRows.size() == 0) {
-                    Log.e("CSV", "No rows available for processing.");
-                    break;
-                }
-
-                // Randomly pick a row
-                int randomIndex = random.nextInt(allRows.size());
-                String[] values = allRows.get(randomIndex);
-
-                // Log the selected row
-                Log.d("CSV", "Random Row: " + String.join(", ", values));
-
-                // Create and position the marker
-                Marker temp_marker = new Marker(mapview);
-                GeoPoint temp_point = new GeoPoint(
-                        Double.parseDouble(values[1]), // Latitude
-                        Double.parseDouble(values[2])  // Longitude
-                );
-
-                temp_marker.setPosition(temp_point);
-
-                double distanceInMeters = Location_utils.DistanceCalculator.calculateDistance(temp_point, new GeoPoint(getUserLatitude(),getUserLongitude()));
-
-                // Customize marker title
-                temp_marker.setTitle(
-                        "Bus Station " + (i + 1) + " " + values[3] +
-                                "\nDistance from me : " + distanceInMeters + 0 + " meters"
-                );
-
-                temp_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                temp_marker.setIcon(getResources().getDrawable(R.drawable.bus100_small));
-                mapview.getOverlays().add(temp_marker);
-                markerList.add(temp_marker);
-                i++; // Increment only if a row is processed
-            }
-
-            // Refresh the map
-            mapview.invalidate();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Refresh the map to display the marker
-        mapview.invalidate();
-    }
 
     private void updateMarkerDistances() {
         GeoPoint myCurrentPoint = new GeoPoint(getUserLatitude(), getUserLongitude());
@@ -702,8 +661,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    // In MainActivity.java
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -711,6 +668,9 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer.release();
             mediaPlayer = null;
         }
+        Log.d("MainActivity", "onDestroy called");
+        Intent serviceIntent = new Intent(this, MyService.class);
+        stopService(serviceIntent);
     }
 
 

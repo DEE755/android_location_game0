@@ -11,6 +11,9 @@ package com.example.myapplicationtest1;
 
 
 
+import static android.provider.Settings.System.getString;
+
+import com.google.firebase.database.Query;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.MutableData;
 
@@ -58,6 +61,7 @@ public class Database {
     //constructor
     Database(String url) {
         //initialize database:
+        //TODO: USE CALLBACK
         this.db_ref = FirebaseDatabase.getInstance(url).getReference();
         Player_ref = null;
 
@@ -76,7 +80,7 @@ public class Database {
         this.Player_ref = Player_ref;
     }
 
-    void add_player_to_db(Player player, MapView mapview) {
+    void add_player_to_online_db(Player player, MapView mapview) {
 
         //CREATE A KEY THAT IS THE EMAIL BUT WITHOUT . BECAUSE FIREBASE DOESNT ALLOW DOTS IN KEYS
         String player_key = player.getEmail().replace(".", "_");
@@ -193,12 +197,60 @@ public class Database {
         });
     }
 
+    public void is_in_database(Player player, final PlayersCallback callback) {
+        DatabaseReference reference = this.db_ref;
+        Query query = reference
+                .child("all_players").child(player.getPlayer_key())
+                .orderByChild("key")
+                .equalTo(player.getPlayer_key());
+
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.getChildrenCount() > 0) {
+                    // Player found
+                    callback.onResult(true);
+                } else {
+                    // Player not found
+                    reference.child("online_players").child(player.getPlayer_key()).setValue(player);
+                    callback.onResult(false);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                // Handle errors appropriately
+                System.err.println("Database error: " + databaseError.getMessage());
+                callback.onResult(false); // Assume player not found on error
+            }
+        });
+
+
+
+    }
+
+    public void add_player_to_main_db(Player clientPlayer)
+    {
+        String key = clientPlayer.getPlayer_key();
+
+       Map<String, Object> map= new HashMap<>();
+        Map<String, Object> map2= new HashMap<>();
+       map.put(clientPlayer.getPlayer_key(), clientPlayer);
+         map2.put("all_players", map);
+       //db_ref.child("all_players").updateChildren(map2);
+        db_ref.setValue(map2);
+
+        Log.d("Database", "Player added to main db: " + clientPlayer.getName());
+    }
+
 
     // Callback interface
     public interface PlayersCallback {
         void onPlayersFetched(List<Player> players);
 
         void onError(Exception e);
+
+        void onResult(boolean isInDatabase);
     }
 
 
@@ -230,28 +282,42 @@ public class Database {
             public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
                 Player newPlayer = dataSnapshot.getValue(Player.class);
                 if (newPlayer != null) {
+                    Log.d("crash", "player not null");
                     try {
-                    if (Objects.equals(newPlayer.getPlayer_key(), local_player.getPlayer_key()))
+                    if (Objects.equals(newPlayer.getPlayer_key(), MyService.getClientPlayer().getPlayer_key()))
                     {return;}
                     } catch (Exception e) {
+                        Log.d("crash", "crashing here");
                         throw new RuntimeException(e);
+
                     }
 
                     newPlayer.setPlayer_key(dataSnapshot.getKey());
+
                     newPlayer.setEmail(dataSnapshot.getKey().replace("_", "."));
+                    Log.d("crash", "player key is: " + newPlayer.getPlayer_key());
+
+                    //crashes here
                     newPlayer.setPlayer_marker(newPlayer.create_player_marker(mapview, newPlayer));
+                    Log.d("crash", "player marker for: " + newPlayer.getPlayer_key());
+
                     newPlayer.setName(dataSnapshot.child("name").getValue(String.class));
+                    Log.d("crash", "new player : " + newPlayer.getName());
                     Boolean isOnMap = dataSnapshot.child("is_on_map").getValue(Boolean.class);
-                    newPlayer.setIs_on_map(isOnMap != null ? isOnMap : true);
+
+                    //newPlayer.setIs_on_map(isOnMap != null ? isOnMap : true);
                     if (Player.online_playerList == null) {
                         Player.online_playerList = new ArrayList<>();
+                        Log.d("crash", "Player list is null");
                     }
                     if (newPlayer != null) {
                         Player.online_playerList.add(newPlayer);
+                        Log.d("crash", "Player added: " + newPlayer.getEmail());
                     }
-                    Log.d("Database", "New player added: " + newPlayer.getEmail());
+
                     // Update the map view
                     if (newPlayer.getPlayer_marker() != null) {
+                        Log.d("crash", "player marker not null");
                         mapview.getOverlays().add(newPlayer.getPlayer_marker());
                         mapview.invalidate();
                     }
@@ -267,7 +333,7 @@ public class Database {
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Log.d("Database", "Player removed: " + dataSnapshot.getKey());
+                //Log.d("Database", "Player removed: " + dataSnapshot.getKey());
                 //Player deletedPlayer = dataSnapshot.getValue(Player.class);
 
                 //deletedPlayer.setPlayer_key(dataSnapshot.getKey());

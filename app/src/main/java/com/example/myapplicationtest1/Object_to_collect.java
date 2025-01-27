@@ -97,12 +97,16 @@ public class Object_to_collect {
 
     public void create_object_marker(MapView mapview)
     {
+        double distance;
+        GeoPoint position =new GeoPoint(this.getLatitude(), this.getLongitude());
         this.object_marker = new Marker(mapview);
-        this.object_marker.setPosition(new GeoPoint(this.getLatitude(), this.getLongitude()));
+        this.object_marker.setPosition(new GeoPoint(position));
         this.object_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        this.object_marker.setTitle(this.getName());
+
         this.object_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus100_small));
         this.setOsmIDMarker(this.object_marker.getId());
+        distance = Location_utils.DistanceCalculator.calculateDistance(Location_utils.getMyCurrentGeoPoint(), position);
+        this.object_marker.setTitle(this.getName() + "\nDistance from me: " + distance + " meters");
         //add to map
         mapview.getOverlays().add(object_marker);
         //keep a reference to the marker from the ID of the marker to the marker itslef for modif/delete purposes
