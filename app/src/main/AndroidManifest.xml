@@ -46,6 +46,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".Disconnect"></activity>
+
+
     </application>
 
 </manifest>

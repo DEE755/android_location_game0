@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         MainActivity.PlayerExistedBefore = existedBefore;
     }
 
+
     // Inner class to hold location data
     public class LocationData {
         private double latitude;
@@ -284,11 +285,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 if (item.getItemId() == R.id.navigation_login) {
-                    Intent intent = new Intent(MainActivity.this, LogIn.class);
-                    startActivity(intent);
-                    return true;
-                    // Handle other navigation items if needed
+                    if (!LogIn.getPlayerLoggedIn()) {
+                        //makes crash we dont know why
+                        Intent intent = new Intent(MainActivity.this, Disconnect.class);
+                        startActivity(intent);
+                        return true;
+                    }
                 }
+
                 return false;
             }
 
@@ -340,8 +344,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Client Player", "Client player: " + clientPlayer0);
                         if (clientPlayer0 != null) {
                             if(PlayerExistedBefore==false){
-                                Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);
-                                mDatabase.addPlayerIfNotExists(clientPlayer0);
+                                Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);mDatabase.addPlayerIfNotExists(clientPlayer0);
                             }
 
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
@@ -489,7 +492,7 @@ public class MainActivity extends AppCompatActivity {
 
                 else {
 
-                    mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
+                    //mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
                     //Location_utils.updatePlayersMarkers();

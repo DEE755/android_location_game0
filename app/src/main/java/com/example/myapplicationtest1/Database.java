@@ -49,7 +49,7 @@ public class Database {
         return db_ref;
     }
 
-    private DatabaseReference Player_ref;// need to identify whos player it is (client) what about when we want to update others ?
+    //private DatabaseReference Player_ref;// need to identify whos player it is (client) what about when we want to update others ?
     private FirebaseDatabase firebase_database;
 
 
@@ -61,7 +61,7 @@ public class Database {
         //initialize database:
         //TODO: USE CALLBACK
         this.db_ref = FirebaseDatabase.getInstance(url).getReference();
-        Player_ref = null;
+        //Player_ref = null;
 
     }
 
@@ -69,14 +69,14 @@ public class Database {
         return this.db_ref;
     }
 
-    DatabaseReference getPlayerRef() {
+   /* DatabaseReference getPlayerRef() {
         return this.Player_ref;
     }
 
 
     void setPlayer_ref(DatabaseReference Player_ref) {
         this.Player_ref = Player_ref;
-    }
+    }*/
 
     void add_player_to_online_db(Player player, MapView mapview) {
 
@@ -90,13 +90,13 @@ public class Database {
                         Log.d("Database", "Player added successfully.");
                         //keep the database path for the player in the player object
                         Log.d("prints", "arrived before line 90 for player:" + player.getName());
-                        DatabaseReference player_ref=db_ref.child("online_players").child(player_key);
-                        setPlayer_ref(player_ref);
+                        //DatabaseReference player_ref=db_ref.child("online_players").child(player_key);
+                        //setPlayer_ref(player_ref);
 
 
                         //while(player.getPlayerRefToDb()==null){Log.d("Database", "Waiting for ref to update");}
                         listenForObjectsToCollect(player, mapview);
-                        player.setPlayerRefToOnlineDb(player_ref);
+                        //player.setPlayerRefToOnlineDb(player_ref);
 
                         //MainActivity.getmDatabase().addPlayerIfNotExists(player);
                     }
@@ -245,7 +245,7 @@ public class Database {
          DatabaseReference db_player_ref=db_ref.child("all_players").child(key);
        db_player_ref.updateChildren(map2);
 
-       clientPlayer.setPlayerRefToMainDb(db_player_ref);
+       //clientPlayer.setPlayerRefToMainDb(db_player_ref);
         //db_ref.updateChildren(map2);
 
         Log.d("Databasee", "Player added tod main db: " + clientPlayer.getName());
@@ -265,7 +265,7 @@ public class Database {
     //the Player field is for testing since we dont really update others players location
 
     //this need to be used more
-    void update_player_loc_db(Player player, double lat, double lon) {
+   /* void update_player_loc_db(Player player, double lat, double lon) {
 
 
         if (this.getPlayerRef() != null) {
@@ -279,7 +279,7 @@ public class Database {
         }
 
 
-    }
+    }*/
 
     // In your Database class
     public void listenForNewOnlinePlayers(MapView mapview, Player local_player) {
@@ -463,7 +463,7 @@ Log.d("prints", "db ref for objects of " + localPlayer.getName() + " is :" +obje
                     dbPlayerRef.setValue(clientPlayer)
                             .addOnSuccessListener(aVoid -> {
                                 Log.d("Databasse", "Player added to all_players: " + clientPlayer.getName());
-                                clientPlayer.setPlayerRefToMainDb(dbPlayerRef);
+                                //clientPlayer.setPlayerRefToMainDb(dbPlayerRef);
                             })
                             .addOnFailureListener(e -> {
                                 Log.e("Databasse", "Failed to add player to all_players", e);

@@ -76,25 +76,25 @@ public class Player {
 
 
 
-    private DatabaseReference PlayerRefToMainDb;
+    //private DatabaseReference PlayerRefToMainDb;
 
-    public DatabaseReference getPlayerRefToMainDb(){
-        return this.PlayerRefToMainDb;
-    }
+    //public DatabaseReference getPlayerRefToMainDb(){
+       /* return this.PlayerRefToMainDb;
+   */
 
-    public void setPlayerRefToMainDb(DatabaseReference playerRefToDb)
-    {this.PlayerRefToMainDb =playerRefToDb;}
+    /*public void setPlayerRefToMainDb(DatabaseReference playerRefToDb)
+    {this.PlayerRefToMainDb =playerRefToDb;}*/
 
 
-    private DatabaseReference PlayerRefToOnlineDb;
+    //private DatabaseReference PlayerRefToOnlineDb;
 
-    public void setPlayerRefToOnlineDb(DatabaseReference playerRefToDb){
+    /*public void setPlayerRefToOnlineDb(DatabaseReference playerRefToDb){
         this.PlayerRefToOnlineDb = playerRefToDb;
     }
 
     public DatabaseReference getPlayerRefToOnlineDb(){
         return this.PlayerRefToOnlineDb;
-    }
+    }*/
 
     //A map to store the player's key and the corresponding marker
     //it is way more efficient to store the markers in a map than in a list for searching purposes
@@ -224,7 +224,7 @@ public class Player {
                     Player.this.is_on_map = player.is_on_map;
                     Player.this.ObjectDeliveredStatus = player.ObjectDeliveredStatus;
                     Player.this.list_of_objects_to_collect = player.list_of_objects_to_collect;
-                    Player.this.PlayerRefToMainDb = playerRef;
+                    //Player.this.PlayerRefToMainDb = playerRef;
                     Player.this.is_active = player.is_active;
                     Player.this.ref_to_logo = player.ref_to_logo;
 
@@ -259,7 +259,7 @@ Player(String email)
     this.list_of_objects_to_collect =new ArrayList<>();
     this.list_of_objects_to_collect.add( new Object_to_collect());
 
-    this.PlayerRefToMainDb =null;
+    //this.PlayerRefToMainDb =null;
     this.is_active=true;
 
 
@@ -283,7 +283,7 @@ Player(String email)
         this.list_of_objects_to_collect =new ArrayList<>();
         this.list_of_objects_to_collect.add( new Object_to_collect());
 
-        this.PlayerRefToMainDb =null;
+        //this.PlayerRefToMainDb =null;
         this.is_active=true;
 
 

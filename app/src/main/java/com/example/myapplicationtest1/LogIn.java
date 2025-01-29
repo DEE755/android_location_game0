@@ -1,6 +1,7 @@
 package com.example.myapplicationtest1;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,6 +27,18 @@ public class LogIn extends AppCompatActivity {
     private String email;
     private String password;
 
+
+    private static boolean PlayerLoggedIn;
+
+
+    public static void setPlayerLoggedIn(boolean b) {
+    }
+
+    public static boolean getPlayerLoggedIn() {
+        return PlayerLoggedIn;
+    }
+
+
     private static Player fetched_logged_in_player;
 
     public static Player getFetched_logged_in_player() {
@@ -49,7 +62,8 @@ public class LogIn extends AppCompatActivity {
                         Log.d("Login", "signInWithEmail:success");
                         FirebaseUser user = mAuth.getCurrentUser();
                         // Navigate to the main activity or update UI
-                        Toast.makeText(LogIn.this, "Authentication successful.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LogIn.this, "Authentication successful, logging you in", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(LogIn.this, MainActivity.class));
                     } else {
                         // If sign in fails, display a message to the user.
                         Log.w("Login", "signInWithEmail:failure", task.getException());
@@ -74,11 +88,18 @@ public class LogIn extends AppCompatActivity {
         Button signupButton = findViewById(R.id.signup_button);
 
 
+
+
+
         Log.d("Dashboard", "onCreate called");
-
-
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_login);
+
+
+
+            setContentView(R.layout.fragment_login);
+            //Toast.makeText(getApplicationContext(), "AAAAAAAA " , Toast.LENGTH_LONG).show();
+
+
 
 
         //Log.d("value", String.valueOf(emailEditText));
@@ -94,10 +115,14 @@ public class LogIn extends AppCompatActivity {
         EditText finalPasswordEditText = passwordEditText;
 
         //what happens when clicking the login button
+        Button finalLoginButton1 = loginButton;
+        Button finalSignupButton1 = signupButton;
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
+                    finalLoginButton1.setBackgroundColor(Color.GREEN);
+                    finalSignupButton1.setBackgroundColor(Color.RED);
                     email = finalEmailEditText.getText().toString().trim();
                     Log.d("email", email);
                     password = finalPasswordEditText.getText().toString().trim();
@@ -111,52 +136,67 @@ public class LogIn extends AppCompatActivity {
 
 
         //what happens when clicking the signup button
+        Button finalLoginButton = loginButton;
+        Button finalSignupButton = signupButton;
         signupButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                try {
-                    email = finalEmailEditText.getText().toString().trim();
-                    Log.d("email", email);
-                    password = finalPasswordEditText.getText().toString().trim();
-                    Log.d("email", password);
-                    loginUser(email, password);
-                } catch (Exception e) {
-                    Log.d("Error", e.getMessage());
-                }
+
+                    //finalLoginButton.setVisibility(View.INVISIBLE);
+                    finalLoginButton.setBackgroundColor(Color.RED);
+                    finalSignupButton.setBackgroundColor(Color.GREEN);
+                    //finalLoginButton.setVisibility(View.INVISIBLE);
 
 
-                mAuth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    if (finalEmailEditText.getText().toString().isEmpty() || finalPasswordEditText.getText().toString().isEmpty()) {
+                        Toast.makeText(LogIn.this, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
 
-                                                   @Override
-                                                   public void onComplete(@NonNull Task<AuthResult> task) {
-                                                       if (task.isSuccessful()) {
-                                                           // Sign in success, update UI with the signed-in user's information
-                                                           Log.d("authen", "createUserWithEmail:success");
-                                                           FirebaseUser user = mAuth.getCurrentUser();
-                                                           //updateUI(user);
-                                                       } else {
-                                                           // If sign in fails, display a message to the user.
-                                                           Log.w("authen", "createUserWithEmail:failure", task.getException());
-                                                           Toast.makeText(LogIn.this, "Authentication failed.",
-                                                                   Toast.LENGTH_SHORT).show();
-                                                           //updateUI(null);
+
+
+
+                    }
+
+                    else {
+                        email = finalEmailEditText.getText().toString().trim();
+                        Log.d("email", email);
+                        password = finalPasswordEditText.getText().toString().trim();
+                        Log.d("email", password);
+                        loginUser(email, password);
+
+                        mAuth.createUserWithEmailAndPassword(email, password)
+                                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+
+                                                           @Override
+                                                           public void onComplete(@NonNull Task<AuthResult> task) {
+                                                               if (task.isSuccessful()) {
+                                                                   // Sign in success, update UI with the signed-in user's information
+                                                                   Log.d("authen", "createUserWithEmail:success");
+                                                                   FirebaseUser user = mAuth.getCurrentUser();
+                                                                   //updateUI(user);
+                                                               } else {
+                                                                   // If sign in fails, display a message to the user.
+                                                                   Log.w("authen", "createUserWithEmail:failure", task.getException());
+                                                                   Toast.makeText(LogIn.this, "Authentication failed.",
+                                                                           Toast.LENGTH_SHORT).show();
+                                                                   //updateUI(null);
+                                                               }
+                                                           }
                                                        }
-                                                   }
-                                               }
-                        );
-                Log.d("auth", "creating user");
+                                );
+                        Log.d("auth", "creating user");
+                    }
+
+
             }
         });
 
 
+
+
     }
 
-    private void updateUI(Object o) {
 
-        return;
-    }
 
 
     @Override
@@ -182,9 +222,10 @@ public class LogIn extends AppCompatActivity {
                     //MyService.setClientPlayer(new Player(MainActivity.getmDatabase(), currentUser.getEmail()));
                     Log.d("usert", "user is logged in as :" + name + " with email: " + email);
                     Log.d("usert", "fetched player: " + fetched_logged_in_player);
-
+                    Toast.makeText(getApplicationContext(), "YOU ARE LOGGED AT " + currentUser.getEmail() +"\nGOOD LUCK", Toast.LENGTH_LONG).show();
                     //in the main_activity the player will be created in MyService with the fetched_logged_in_player data
                     MainActivity.setPlayerExistedBefore(true);
+                    setPlayerLoggedIn(true);
                     startActivity(new Intent(LogIn.this, MainActivity.class));
 
                 }
@@ -199,6 +240,7 @@ public class LogIn extends AppCompatActivity {
                     fetched_logged_in_player = new Player(email);
                     Log.d("usert", "user is logged in as :" + fetched_logged_in_player);
                     MainActivity.setPlayerExistedBefore(false);
+                    setPlayerLoggedIn(true);
                     startActivity(new Intent(LogIn.this, MainActivity.class));
 
                 }
