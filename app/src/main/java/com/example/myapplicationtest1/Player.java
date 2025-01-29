@@ -1,13 +1,10 @@
 package com.example.myapplicationtest1;
 
-import static com.example.myapplicationtest1.Location_utils.create_and_place_player_marker;
-
 import android.util.Log;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import org.osmdroid.util.GeoPoint;
@@ -79,16 +76,25 @@ public class Player {
 
 
 
-    private DatabaseReference PlayerRefToDb;
+    private DatabaseReference PlayerRefToMainDb;
 
-    public DatabaseReference getPlayerRefToDb(){
-        return this.PlayerRefToDb;
+    public DatabaseReference getPlayerRefToMainDb(){
+        return this.PlayerRefToMainDb;
     }
 
-    public void setPlayerRefToDb(DatabaseReference playerRefToDb)
-    {this.PlayerRefToDb =playerRefToDb;}
+    public void setPlayerRefToMainDb(DatabaseReference playerRefToDb)
+    {this.PlayerRefToMainDb =playerRefToDb;}
 
 
+    private DatabaseReference PlayerRefToOnlineDb;
+
+    public void setPlayerRefToOnlineDb(DatabaseReference playerRefToDb){
+        this.PlayerRefToOnlineDb = playerRefToDb;
+    }
+
+    public DatabaseReference getPlayerRefToOnlineDb(){
+        return this.PlayerRefToOnlineDb;
+    }
 
     //A map to store the player's key and the corresponding marker
     //it is way more efficient to store the markers in a map than in a list for searching purposes
@@ -114,28 +120,12 @@ public class Player {
         this.list_of_objects_to_collect = list_of_objects_to_collect;
     }
 
-    public void fetchObjectsToCollect(Database db) {
-        // Fetch objects to collect from the database
-        List<Object_to_collect> objects = new ArrayList<>();
-        DatabaseReference objectsRef = db.getPlayerRef().getRef().child("objects_to_collect");
-
-        objectsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                List<Object_to_collect> objects = new ArrayList<>();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Object_to_collect object = snapshot.getValue(Object_to_collect.class);
-                    objects.add(object);
-                }
-                setList_of_objects_to_collect(objects);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e("Player", "Error fetching objects to collect", databaseError.toException());
-            }
-        });
+    public interface DataFetchListener {
+        void onDataFetched(Player player);
+        void onError(DatabaseError error);
     }
+
+
 
     public static Map getPlayerMarkerMap() {
         return playerMarkerMap;
@@ -149,7 +139,7 @@ public class Player {
     //FOR TEST PURPOSE:
     Marker Player_marker =null;
 
-    private String Player_key;
+    private String PlayerKey;
 
 
     private boolean is_on_map;
@@ -163,46 +153,6 @@ public class Player {
     public void setPlayer_marker(Marker Player_marker) {
         this.Player_marker =Player_marker;
     }
-
-
-
-    // Location_utils.java
-    public class Location_utils {
-        // Other methods and fields...
-
-        void fetchOnlinePlayersData(Database db, MapView mapview) {
-            DatabaseReference playersRef = FirebaseDatabase.getInstance().getReference("online_players");
-
-            playersRef.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot playerSnapshot : dataSnapshot.getChildren()) {
-                        // Fetch part of the player's data
-                        String playerId = playerSnapshot.getKey();
-                        String playerName = playerSnapshot.child("name").getValue(String.class);
-                        Double playerLatitude = playerSnapshot.child("latitude").getValue(Double.class);
-                        Double playerLongitude = playerSnapshot.child("longitude").getValue(Double.class);
-
-                        Player player =new Player(playerName, playerLatitude, playerLongitude, playerId, db);
-                        // Add to map
-                        create_and_place_player_marker(player, mapview, MyService.getClientPlayer());
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    // Handle possible errors
-                    System.err.println("Error fetching data: " + databaseError.getMessage());
-                }
-            });
-        }
-    }
-
-
-
-
-
-
 
 
     public Marker create_player_marker(MapView mapView, Player player) {
@@ -244,7 +194,7 @@ public class Player {
 
         this.setPlayer_marker(player_marker);
 //add to the java map:
-        Player.playerMarkerMap.put(this.getPlayer_key(), player_marker);
+        Player.playerMarkerMap.put(this.getPlayerKey(), player_marker);
 
         return player_marker;
 
@@ -256,7 +206,69 @@ public class Player {
 
     // Constructors
 
+     Player(Database db, String email, DataFetchListener listener) {
+        DatabaseReference playerRef = db.get_db_ref().child("all_players").child(email.replace(".", "_"));
+        playerRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Player player = dataSnapshot.getValue(Player.class);
+                if (player != null) {
+                    Log.d("Player", "Player data: " + player.toString());
+                    Player.this.name = player.name;
+                    Player.this.latitude = player.latitude;
+                    Player.this.longitude = player.longitude;
+                    Player.this.currentScore = player.currentScore;
+                    Player.this.email = email;
+                    Player.this.PlayerKey = email.replace(".", "_");
+                    Player.this.rank = player.rank;
+                    Player.this.is_on_map = player.is_on_map;
+                    Player.this.ObjectDeliveredStatus = player.ObjectDeliveredStatus;
+                    Player.this.list_of_objects_to_collect = player.list_of_objects_to_collect;
+                    Player.this.PlayerRefToMainDb = playerRef;
+                    Player.this.is_active = player.is_active;
+                    Player.this.ref_to_logo = player.ref_to_logo;
+
+                    listener.onDataFetched(Player.this);
+                } else {
+                    Log.d("Player", "Player not found");
+                    listener.onError(DatabaseError.fromException(new Exception("Player not found")));
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("Player", "Error fetching player data", databaseError.toException());
+                listener.onError(databaseError);
+            }
+        });
+    }
+
     public Player(){}
+
+
+Player(String email)
+{
+    this.email=email;
+    this.PlayerKey =email.replace(".", "_");
+    this.name=email;
+
+    this.currentScore = 0; // Default score is 0
+    this.rank=0;
+    this.is_on_map =false;
+    this.ObjectDeliveredStatus =false;
+    this.list_of_objects_to_collect =new ArrayList<>();
+    this.list_of_objects_to_collect.add( new Object_to_collect());
+
+    this.PlayerRefToMainDb =null;
+    this.is_active=true;
+
+
+    player_counter++;
+    ref_to_logo=name.toLowerCase().replace(" ", "_")+"_logo";
+
+
+
+}
 
     public Player(String name, double latitude, double longitude, String email, Database db) {
         this.name = name;
@@ -264,14 +276,14 @@ public class Player {
         this.longitude = longitude;
         this.currentScore = 0; // Default score is 0
         this.email=email;
-        this.Player_key =email.replace(".", "_");
+        this.PlayerKey =email.replace(".", "_");
         this.rank=0;
         this.is_on_map =false;
         this.ObjectDeliveredStatus =false;
         this.list_of_objects_to_collect =new ArrayList<>();
         this.list_of_objects_to_collect.add( new Object_to_collect());
 
-        this.PlayerRefToDb =null;
+        this.PlayerRefToMainDb =null;
         this.is_active=true;
 
 
@@ -344,12 +356,12 @@ public class Player {
         this.longitude = longitude;
     }
 
-    public String getPlayer_key(){
-        return this.Player_key;
+    public String getPlayerKey(){
+        return this.PlayerKey;
     }
 
-    public void setPlayer_key(String Player_key){
-        this.Player_key = Player_key;
+    public void setPlayerKey(String Player_key){
+        this.PlayerKey = Player_key;
     }
 
 
@@ -400,12 +412,12 @@ public class Player {
                 // Update the object
                 switch (iteration.increase()%2) {
                     case 0:
-                        db.get_db_ref().child("online_players").child(getPlayer_key()).child("is_active").setValue(false);
+                        db.get_db_ref().child("online_players").child(getPlayerKey()).child("is_active").setValue(false);
                         Log.d("Player", "triggered false" + iteration.getIterator_nb());
 
                         break;
                     case 1:
-                        db.get_db_ref().child("online_players").child(getPlayer_key()).child("is_active").setValue(true);
+                        db.get_db_ref().child("online_players").child(getPlayerKey()).child("is_active").setValue(true);
                         Log.d("Player" , "triggered true "+ iteration.getIterator_nb());
 
                         break;

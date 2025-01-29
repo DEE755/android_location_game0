@@ -18,12 +18,17 @@ public class MyService extends Service {
         return ClientPlayer;
     }
 
+
+
     @Override
     public void onCreate() {
         super.onCreate();
         // Initialize your database and player here
-        mDatabase = new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
-        ClientPlayer = new Player("Phone_owner(real_location_data)", 0, 0, "test@hit.ac.il", mDatabase);
+        //mDatabase = new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
+
+        ClientPlayer = LogIn.getFetched_logged_in_player();
+
+
     }
 
     //"Phone_owner(real_location_data)"
@@ -50,15 +55,15 @@ public class MyService extends Service {
     }
 
     private void onQuitApp(Player player_to_remove, Database database) {
-        DatabaseReference playerRef = database.get_db_ref().child("online_players").child(player_to_remove.getPlayer_key());
-    Log.d("Database", "Removing player: " + player_to_remove.getPlayer_key());
+        DatabaseReference playerRef = database.get_db_ref().child("online_players").child(player_to_remove.getPlayerKey());
+    Log.d("Database", "Removing player: " + player_to_remove.getPlayerKey());
 
         playerRef.removeValue().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
-                Log.d("Database", "Player removed successfully: " + player_to_remove.getPlayer_key());
-                database.removePlayerFromDatabase(player_to_remove.getPlayer_key());
+                Log.d("Database", "Player removed successfully: " + player_to_remove.getPlayerKey());
+                database.removePlayerFromDatabase(player_to_remove.getPlayerKey());
             } else {
-                Log.e("Database", "Failed to remove player: " + player_to_remove.getPlayer_key(), task.getException());
+                Log.e("Database", "Failed to remove player: " + player_to_remove.getPlayerKey(), task.getException());
             }
         });
     }

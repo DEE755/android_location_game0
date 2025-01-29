@@ -1,4 +1,4 @@
-package com.example.myapplicationtest1.ui.dashboard;
+package com.example.myapplicationtest1.ui.login;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -10,18 +10,18 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.myapplicationtest1.databinding.FragmentDashboardBinding;
+import com.example.myapplicationtest1.databinding.FragmentLoginBinding;
 
 public class DashboardFragment extends Fragment {
 
-    private FragmentDashboardBinding binding;
+    private FragmentLoginBinding binding;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         DashboardViewModel dashboardViewModel =
                 new ViewModelProvider(this).get(DashboardViewModel.class);
 
-        binding = FragmentDashboardBinding.inflate(inflater, container, false);
+        binding = FragmentLoginBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         final TextView textView = binding.password;

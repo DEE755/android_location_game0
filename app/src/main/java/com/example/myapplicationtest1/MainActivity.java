@@ -16,11 +16,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
-import java.util.Random;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -47,7 +46,6 @@ import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
-
 import android.content.Context;
 import android.preference.PreferenceManager;
 
@@ -56,12 +54,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-
-
 
 
 //TODO//TODO IT SEEMS THAT THE WRONG PLAYER IS REMOVED FROM THE DATABASE THEN IT IS CREATED/DELETED AND SOME STAYS IN THE DATABASE
@@ -80,6 +72,15 @@ public class MainActivity extends AppCompatActivity {
 
 
     private static final org.apache.commons.logging.Log log = LogFactory.getLog(MainActivity.class);
+    private static boolean PlayerExistedBefore;
+
+    public static boolean getPlayerExistedBefore() {
+        return PlayerExistedBefore;
+    }
+
+    public static void setPlayerExistedBefore(boolean existedBefore) {
+        MainActivity.PlayerExistedBefore = existedBefore;
+    }
 
     // Inner class to hold location data
     public class LocationData {
@@ -122,7 +123,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
-    private Button playsoundButton;
+    private Button MainButton;
+
     private MediaPlayer mediaPlayer;
 
     private ProgressBar locationProgressBar;
@@ -146,7 +148,13 @@ public class MainActivity extends AppCompatActivity {
 
     private int current_iteration=0;
 
-    private Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
+    private static Database mDatabase= new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
+
+    public static Database getmDatabase() {
+        return mDatabase;
+    }
+
+
 
     //private Player client_player=new Player("Phone_owner(real_location_data)",0,0,"test@hit.ac.il",mDatabase); //this is the 'client' player (the device owner)
 
@@ -175,6 +183,25 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    protected BottomNavigationView navView;
+
+    public BottomNavigationView getNavView() {
+        return navView;
+    }
+
+    void setNavView(BottomNavigationView navView) {
+        this.navView = navView;
+    }
+
+    protected AppBarConfiguration appBarConfiguration;
+
+    public AppBarConfiguration getAppBarConfiguration() {
+        return appBarConfiguration;
+    }
+
+    void setAppBarConfiguration(AppBarConfiguration appBarConfiguration) {
+        this.appBarConfiguration = appBarConfiguration;
+    }
 
 
 
@@ -223,17 +250,22 @@ public class MainActivity extends AppCompatActivity {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Initialize UI components
-        playsoundButton = findViewById(R.id.playsoundButton);
+        MainButton = findViewById(R.id.MainButton);
         mediaPlayer = MediaPlayer.create(this, R.raw.sound1);
 
+
+
+
         // Setup Bottom Navigation
-        BottomNavigationView navView = binding.navView; // Use binding to avoid redundancy
-        AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
+         navView = binding.navView; // Use binding to avoid redundancy
+         appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_home, R.id.navigation_login, R.id.navigation_notifications)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
+
+
 
         // Start the service class
         Intent serviceIntent = new Intent(this, MyService.class);
@@ -243,14 +275,34 @@ public class MainActivity extends AppCompatActivity {
 
 
         // Set button initially disabled until location is fetched
-        playsoundButton.setEnabled(false);
-        playsoundButton.setText("Fetching Location...");
+        MainButton.setEnabled(false);
+        MainButton.setText("Fetching Location...");
+
+
+         //navView = findViewById(R.id.nav_view);
+        navView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                if (item.getItemId() == R.id.navigation_login) {
+                    Intent intent = new Intent(MainActivity.this, LogIn.class);
+                    startActivity(intent);
+                    return true;
+                    // Handle other navigation items if needed
+                }
+                return false;
+            }
+
+            private void start_activity_login() {
+                    Intent intent = new Intent(MainActivity.this, LogIn.class);
+                    startActivity(intent);
+                }
 
 
 
+        });
 
         // Handle button click
-        playsoundButton.setOnClickListener(v -> {
+        MainButton.setOnClickListener(v -> {
            // if (mediaPlayer != null) {
                 //mediaPlayer.start();}
 
@@ -272,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
                     Sound.ToneGenerator.toneGenerator(400, 4000, (int) zoom_speed / 1000);
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
-                    playsoundButton.setText("GAME STARTING");
+                    MainButton.setText("GAME STARTING");
 
 
                     //ACTUAL LOCAL PLAYER:
@@ -283,36 +335,24 @@ public class MainActivity extends AppCompatActivity {
 
                     // Adding the client_player to the game db
 
-                        Player clientPlayer = MyService.getClientPlayer();
-                        if (clientPlayer != null) {
-                            mDatabase.add_player_to_online_db(clientPlayer, mapview);
+                        Player clientPlayer0 = MyService.getClientPlayer();
 
-                            //add to main db if not already there
-                            mDatabase.is_in_database(clientPlayer, new Database.PlayersCallback() {
-                                @Override
-                                public void onPlayersFetched(List<Player> players) {
-                                    // Not used in this context
-                                }
+                        Log.d("Client Player", "Client player: " + clientPlayer0);
+                        if (clientPlayer0 != null) {
+                            if(PlayerExistedBefore==false){
+                                Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);
+                                mDatabase.addPlayerIfNotExists(clientPlayer0);
+                            }
 
-                                @Override
-                                public void onError(Exception e) {
-                                    Log.e("Database", "Error checking if player is in database", e);
-                                }
+                            mDatabase.add_player_to_online_db(clientPlayer0, mapview);
 
-                                @Override
-                                public void onResult(boolean isInDatabase) {
-                                    Log.d("Database", "Player is in database: " + isInDatabase);
-                                    if (!isInDatabase) {
-                                        mDatabase.add_player_to_main_db(clientPlayer);
-                                        Log.d("Database", "Client player added to database");
-                                    }
 
-                                    clientPlayer.send_dead_man_check(mDatabase, iteration);
-                                    mDatabase.listenForNewOnlinePlayers(mapview, MyService.getClientPlayer());
-                                }
-                            });
-                        } else {
-                            Log.e("MainActivity", "Client player is null");
+                            //USING BOTH MAKES CRASH !! even after completion
+                            //but doing allplayers then only the client player makes crash
+
+
+
+
                         }
 
 
@@ -327,12 +367,10 @@ public class MainActivity extends AppCompatActivity {
                     //client_player.fetchObjectsToCollect(mDatabase);
 
 
-                    handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
+                    handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEM"), 2000);
                 }
 
                 else {
-
-
 
                     //update distance from bus:
                     updateMarkerDistances();
@@ -341,14 +379,14 @@ public class MainActivity extends AppCompatActivity {
                     int distance=Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint());
                     Log.d("distance", String.valueOf(min_marker.getPosition()));
                     if (distance <= 300 + 960-240){//TODO: maybe doesnt work in term of distance {
-                        playsoundButton.setText("CONGRATS\n +100POINTS");
+                        MainButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
                         MyService.getClientPlayer().addScore(100);
                         //MyService.getClientPlayer().getPlayerRefToDb().child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
 
                         //make crash
                         Log.d("db_ref", String.valueOf(mDatabase.get_db_ref()));
-                        mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayer_key()).child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+                        mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayerKey()).child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
 
                         //set logo to validation color
                         min_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
@@ -358,9 +396,9 @@ public class MainActivity extends AppCompatActivity {
 
 
                     } else {
-                        playsoundButton.setText("NO ITEM HERE");
+                        MainButton.setText("NO ITEM HERE");
                         Sound.ToneGenerator.toneGenerator(800, 500, (int) zoom_speed / 1000);
-                        handler.postDelayed(() -> playsoundButton.setText("READY 2 CATCH ITEM"), 2000);
+                        handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEM"), 2000);
                         Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint())));
                     }
 
@@ -395,17 +433,6 @@ public class MainActivity extends AppCompatActivity {
 
         show_current_position(9.0,1000L);
 
-        //set the new players listener:
-
-
-
-        //mDatabase.listenForNewOnlinePlayers(mapview, MyService.getClientPlayer());
-
-
-
-
-        // Enable disk persistence
-        //FirebaseDatabase.getInstance().setPersistenceEnabled(false);
 
     }//oncreateend
 
@@ -421,8 +448,8 @@ public class MainActivity extends AppCompatActivity {
 
 
                 if(MarkersCreatedFlag ==false){
-                    playsoundButton.setText("START GAME");
-                    playsoundButton.setEnabled(true);
+                    MainButton.setText("START GAME");
+                    MainButton.setEnabled(true);
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
                     //Bus markers and put them on the mapview
                     //create_all_bus_Markers(inputStream);
@@ -627,7 +654,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     // Permissions denied, disable location functionality
                     Toast.makeText(this, "Location permissions denied.", Toast.LENGTH_SHORT).show();
-                    playsoundButton.setText("Location Disabled");
+                    MainButton.setText("Location Disabled");
                 }
             }
         }

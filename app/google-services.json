@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "51208993076",
     "project_id": "android-location-game0",
-    "storage_bucket": "android-location-game0.firebasestorage.app"
+    "storage_bucket": "https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app"
   },
   "client": [
     {

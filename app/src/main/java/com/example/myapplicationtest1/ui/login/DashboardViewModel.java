@@ -1,4 +1,4 @@
-package com.example.myapplicationtest1.ui.dashboard;
+package com.example.myapplicationtest1.ui.login;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;

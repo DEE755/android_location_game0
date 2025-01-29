@@ -11,8 +11,6 @@ package com.example.myapplicationtest1;
 
 
 
-import static android.provider.Settings.System.getString;
-
 import com.google.firebase.database.Query;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.MutableData;
@@ -92,10 +90,15 @@ public class Database {
                         Log.d("Database", "Player added successfully.");
                         //keep the database path for the player in the player object
                         Log.d("prints", "arrived before line 90 for player:" + player.getName());
-                        setPlayer_ref(db_ref.child("online_players").child(player_key));
-                        Log.d("prints", "arrived to line 90 for player:" + player.getName()+"\nThe ref is: "+player.getPlayerRefToDb());
+                        DatabaseReference player_ref=db_ref.child("online_players").child(player_key);
+                        setPlayer_ref(player_ref);
+
+
                         //while(player.getPlayerRefToDb()==null){Log.d("Database", "Waiting for ref to update");}
                         listenForObjectsToCollect(player, mapview);
+                        player.setPlayerRefToOnlineDb(player_ref);
+
+                        //MainActivity.getmDatabase().addPlayerIfNotExists(player);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -106,13 +109,6 @@ public class Database {
                     }
                 });
 
-
-        //map_long_lat.put("latitude", player.getLatitude());
-        //map_long_lat.put("longitude", player.getLongitude());
-
-
-        // this.db_ref.child("online_players").child(player_key).setValue(player.getName());
-        //this.db_ref.child("online_players").child(player_key).child("location").updateChildren(map_long_lat);
 
     }
 
@@ -171,7 +167,7 @@ public class Database {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Player player = snapshot.getValue(Player.class);
                     if (player != null) {
-                        player.setPlayer_key(snapshot.getKey());
+                        player.setPlayerKey(snapshot.getKey());
                         player.setEmail(snapshot.getKey().replace("_", "."));
                         player.setPlayer_marker(player.create_player_marker(mapview, player));
                         player.setName(snapshot.child("name").getValue(String.class));
@@ -200,9 +196,10 @@ public class Database {
     public void is_in_database(Player player, final PlayersCallback callback) {
         DatabaseReference reference = this.db_ref;
         Query query = reference
-                .child("all_players").child(player.getPlayer_key())
+                .child("all_players").child(player.getPlayerKey())
                 .orderByChild("key")
-                .equalTo(player.getPlayer_key());
+                .equalTo(player.getPlayerKey());
+       // Log.d("Databasedd", "Checking if player " + player.getPlayer_key());
 
         query.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -210,10 +207,12 @@ public class Database {
                 if (dataSnapshot.getChildrenCount() > 0) {
                     // Player found
                     callback.onResult(true);
+                    Log.d("Databasedd", "Checking if player " + player.getPlayerKey() + "true");
                 } else {
                     // Player not found
-                    reference.child("online_players").child(player.getPlayer_key()).setValue(player);
+                    reference.child("online_players").child(player.getPlayerKey()).setValue(player);
                     callback.onResult(false);
+                    Log.d("Databasedd", "Checking if player " + player.getPlayerKey() + "false");
                 }
             }
 
@@ -231,16 +230,25 @@ public class Database {
 
     public void add_player_to_main_db(Player clientPlayer)
     {
-        String key = clientPlayer.getPlayer_key();
+
+
+        String key = clientPlayer.getPlayerKey();
+        //Log.d("Key", key);
+
+        //db_ref.child("all_players").child(key).setValue(clientPlayer);
+
 
        Map<String, Object> map= new HashMap<>();
         Map<String, Object> map2= new HashMap<>();
-       map.put(clientPlayer.getPlayer_key(), clientPlayer);
+       map.put(clientPlayer.getPlayerKey(), clientPlayer);
          map2.put("all_players", map);
-       //db_ref.child("all_players").updateChildren(map2);
-        db_ref.setValue(map2);
+         DatabaseReference db_player_ref=db_ref.child("all_players").child(key);
+       db_player_ref.updateChildren(map2);
 
-        Log.d("Database", "Player added to main db: " + clientPlayer.getName());
+       clientPlayer.setPlayerRefToMainDb(db_player_ref);
+        //db_ref.updateChildren(map2);
+
+        Log.d("Databasee", "Player added tod main db: " + clientPlayer.getName());
     }
 
 
@@ -284,7 +292,7 @@ public class Database {
                 if (newPlayer != null) {
                     Log.d("crash", "player not null");
                     try {
-                    if (Objects.equals(newPlayer.getPlayer_key(), MyService.getClientPlayer().getPlayer_key()))
+                    if (Objects.equals(newPlayer.getPlayerKey(), MyService.getClientPlayer().getPlayerKey()))
                     {return;}
                     } catch (Exception e) {
                         Log.d("crash", "crashing here");
@@ -292,14 +300,14 @@ public class Database {
 
                     }
 
-                    newPlayer.setPlayer_key(dataSnapshot.getKey());
+                    newPlayer.setPlayerKey(dataSnapshot.getKey());
 
                     newPlayer.setEmail(dataSnapshot.getKey().replace("_", "."));
-                    Log.d("crash", "player key is: " + newPlayer.getPlayer_key());
+                    Log.d("crash", "player key is: " + newPlayer.getPlayerKey());
 
-                    //crashes here
+
                     newPlayer.setPlayer_marker(newPlayer.create_player_marker(mapview, newPlayer));
-                    Log.d("crash", "player marker for: " + newPlayer.getPlayer_key());
+                    Log.d("crash", "player marker for: " + newPlayer.getPlayerKey());
 
                     newPlayer.setName(dataSnapshot.child("name").getValue(String.class));
                     Log.d("crash", "new player : " + newPlayer.getName());
@@ -371,7 +379,7 @@ public class Database {
     //when it detects that the list of objects' been added to the localPlayer
     //cascade of listening
     public void listenForObjectsToCollect(Player localPlayer, MapView mapview) {
-        DatabaseReference objectsRef = get_db_ref().child("online_players").child(localPlayer.getPlayer_key()).child("list_of_objects_to_collect");
+        DatabaseReference objectsRef = get_db_ref().child("online_players").child(localPlayer.getPlayerKey()).child("list_of_objects_to_collect");
 Log.d("prints", "db ref for objects of " + localPlayer.getName() + " is :" +objectsRef);
         objectsRef.addChildEventListener(new ChildEventListener() {
             @Override
@@ -435,8 +443,45 @@ Log.d("prints", "db ref for objects of " + localPlayer.getName() + " is :" +obje
             }
         });
 
-
     }
+
+
+
+    public void addPlayerIfNotExists(Player clientPlayer) {
+        Log.d("Databasse", "Adding player to all_players: " + clientPlayer.getPlayerKey());
+        String key = clientPlayer.getPlayerKey();
+
+        DatabaseReference dbPlayerRef = db_ref.child("all_players").child(key);
+
+        Log.d("Databasse", "Checking" + dbPlayerRef);
+
+        dbPlayerRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.exists()) {
+                    // Player does not exist, add to the database
+                    dbPlayerRef.setValue(clientPlayer)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("Databasse", "Player added to all_players: " + clientPlayer.getName());
+                                clientPlayer.setPlayerRefToMainDb(dbPlayerRef);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("Databasse", "Failed to add player to all_players", e);
+                            });
+                } else {
+                    Log.d("Databasse", "Player already exists in all_players: " + clientPlayer.getName());
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e("Database", "Error checking if player exists in all_players", databaseError.toException());
+            }
+        });
+    }
+
+
+
 }
 
 
