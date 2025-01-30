@@ -11,14 +11,17 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -125,6 +128,8 @@ public class MainActivity extends AppCompatActivity {
 
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private Button MainButton;
+
+    private TextView Score_label;
 
     private MediaPlayer mediaPlayer;
 
@@ -252,6 +257,10 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize UI components
         MainButton = findViewById(R.id.MainButton);
+        Score_label = findViewById(R.id.Score_Label);
+        Score_label.setText("Score: 0");
+        Score_label.setBackgroundColor(Color.GREEN);
+
         mediaPlayer = MediaPlayer.create(this, R.raw.sound1);
 
 
@@ -329,6 +338,7 @@ public class MainActivity extends AppCompatActivity {
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
                     MainButton.setText("GAME STARTING");
+                    Toast.makeText(this,"Your items are being fetch, please wait", Toast.LENGTH_LONG).show();
 
 
                     //ACTUAL LOCAL PLAYER:
@@ -346,15 +356,11 @@ public class MainActivity extends AppCompatActivity {
                             if(PlayerExistedBefore==false){
                                 Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);mDatabase.addPlayerIfNotExists(clientPlayer0);
                             }
-
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
-
+                            Score_label.setText("Score: " + MyService.getClientPlayer().getScore());
 
                             //USING BOTH MAKES CRASH !! even after completion
                             //but doing allplayers then only the client player makes crash
-
-
-
 
                         }
 
@@ -370,7 +376,7 @@ public class MainActivity extends AppCompatActivity {
                     //client_player.fetchObjectsToCollect(mDatabase);
 
 
-                    handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEMS"), 2000);
+                    handler.postDelayed(() -> MainButton.setText("CATCH ITEMS"), 2000);
                 }
 
                 else {
@@ -382,6 +388,9 @@ public class MainActivity extends AppCompatActivity {
                     int distance=Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint());
                     Log.d("distance", String.valueOf(closest_item.getObjectMarker().getPosition()));
                     if (distance <= 1500){
+                        //all the actions that happen when the player catches an item englobe later:
+                        //Global_Utilities.Success_catch()
+
                         MainButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
                         //TODO the clientplayer score should fetch the score from the db and not put it at zero
@@ -397,16 +406,18 @@ public class MainActivity extends AppCompatActivity {
 
                         MyService.getClientPlayer().getList_of_objects_to_collect().remove(closest_item);
 
+                        Score_label.setText("Score: " + MyService.getClientPlayer().getScore());
+
                         //ADD A FLAG TO ALREADY_TAKEN or remove from db
 //TODO either add on the object + update full object or add on db the increase of score
                         //TODO TODO: PREVENT THE SAME ITEM TO BE TAKEN MORE THEN ONE TIME ADD A FLAG
 //READY FOR NEW CATCH: UPDATE UI
-                        handler.postDelayed(() -> MainButton.setText("READY TO CATCH MORE ITEMS"), 2000);
+                        handler.postDelayed(() -> MainButton.setText("CATCH MORE ITEMS"), 2000);
 //TODO UPDATE UI SCORE
                     } else {
                         MainButton.setText("NO ITEM HERE");
                         Sound.ToneGenerator.toneGenerator(800, 500, (int) zoom_speed / 1000);
-                        handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEM"), 2000);
+                        handler.postDelayed(() -> MainButton.setText("CATCH ITEMS"), 2000);
                         Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint())));
                     }
 
@@ -439,6 +450,8 @@ public class MainActivity extends AppCompatActivity {
         mapview.setTileSource(TileSourceFactory.MAPNIK);
 
 
+
+
         show_current_position(9.0,1000L);
 
 
@@ -459,15 +472,6 @@ public class MainActivity extends AppCompatActivity {
                     MainButton.setText("START GAME");
                     MainButton.setEnabled(true);
                     InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
-                    //Bus markers and put them on the mapview
-                    //create_all_bus_Markers(inputStream);
-
-//TODO: SOMETHING MAKES CRASH VERIFY THE ORDER OF HOW THINGS HAPPENS PROBABLY ORDER WRONG THEN SOMETHING IS NULL
-                           // there is the fetchObjectsToCollect method that is called before
-
-
-
-
 
 
                     //The players are fetch from the DB to a java_player object
@@ -477,21 +481,6 @@ public class MainActivity extends AppCompatActivity {
                     //put all Players in the list online_playerList
                     //the list_online_playerList is reconstituted every time some of the data changes in the database
 
-
-                    //for (Player player : Player.online_playerList){//it is empty!! tha's because the result werent ready
-
-                        //the markers now are already created and placed on the field of the Player
-
-                        //Location_utils.create_and_place_player_marker(player, mapview, client_player);
-                        // add the marker to the map:
-
-
-                        //mapview.getOverlays().add(player.getPlayer_marker());
-                        //PlayersmarkerList.add(player_marker);
-
-                        // Refresh the map
-                        //mapview.invalidate();
-                   // }
                 MarkersCreatedFlag =true;
                 }
 

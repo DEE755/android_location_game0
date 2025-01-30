@@ -82,10 +82,10 @@ public class LogIn extends AppCompatActivity {
 // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
 
-        EditText emailEditText = findViewById(R.id.username);
-        EditText passwordEditText = findViewById(R.id.password);
-        Button loginButton = findViewById(R.id.login_button);
-        Button signupButton = findViewById(R.id.signup_button);
+        EditText emailEditText;
+        EditText passwordEditText;
+        Button loginButton;
+        Button signupButton;
 
 
 

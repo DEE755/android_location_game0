@@ -54,7 +54,10 @@ public class MyService extends Service {
         super.onDestroy();
     }
 
-    private void onQuitApp(Player player_to_remove, Database database) {
+    public static void onQuitApp(Player player_to_remove, Database database) {
+        if (player_to_remove == null || database == null) {
+            return;
+        }
         DatabaseReference playerRef = database.get_db_ref().child("online_players").child(player_to_remove.getPlayerKey());
     Log.d("Database", "Removing player: " + player_to_remove.getPlayerKey());
 

@@ -1,0 +1,80 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#FFEB3B"
+        android:scaleY="1"
+        android:visibility="visible"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.238"
+        app:srcCompat="@drawable/start_screen_background"
+        tools:visibility="visible" />
+
+    <Button
+        android:id="@+id/play_button"
+        style="@android:style/Widget.Holo.Light.Button"
+        android:layout_width="120dp"
+        android:layout_height="45dp"
+        android:layout_marginTop="300dp"
+        android:background="#0097A7"
+        android:backgroundTint="#00796B"
+        android:text="Play"
+        app:icon="@android:drawable/ic_media_play"
+        app:iconTint="#FBC02D"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <Button
+        android:id="@+id/quit_button"
+        android:layout_width="70dp"
+        android:layout_height="35dp"
+        android:layout_marginTop="-200dp"
+        android:background="#3F51B5"
+        android:backgroundTint="#3F51B5"
+        android:text="Quit"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/play_button" />
+
+    <Button
+        android:id="@+id/leaderboard_button"
+        android:layout_width="99dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="-320dp"
+        android:background="#3F51B5"
+        android:backgroundTint="#3F51B5"
+        android:text="Leader\nboard"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/play_button" />
+
+    <ToggleButton
+        android:id="@+id/credits_button"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="Credits"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/quit_button" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

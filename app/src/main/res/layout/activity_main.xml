@@ -63,6 +63,20 @@
 
 
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/Score_Label"
+            android:layout_width="300dp"
+            android:layout_height="40dp"
+            android:padding="10dp"
+            android:text="@string/score"
+            android:textColor="#FBAAAA" />
+    </RelativeLayout>
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
