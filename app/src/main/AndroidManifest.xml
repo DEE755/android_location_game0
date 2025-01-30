@@ -50,6 +50,9 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".LoadingScreen"
+            android:exported="true">
+        </activity>
 
         <activity android:name=".Disconnect"></activity>
 

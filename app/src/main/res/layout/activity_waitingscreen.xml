@@ -1,0 +1,53 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#FFEB3B"
+        android:scaleY="1"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/loading_screen_background"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/exampleTextView"
+        android:layout_width="140dp"
+        android:layout_height="38dp"
+        android:layout_gravity="center"
+        android:text="@string/loading_game_content_n_please_wait"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        tools:layout_editor_absoluteX="159dp"
+        tools:layout_editor_absoluteY="406dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="260dp"
+        android:layout_marginLeft="100dp"
+        android:layout_marginRight="90dp"
+        app:srcCompat="@drawable/loading_screen_background"
+        tools:visibility="visible" />
+
+    <ProgressBar
+        android:id="@+id/loadingProgressBar"
+        android:layout_width="500dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="-350dp"
+
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/imageView" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

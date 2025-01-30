@@ -97,6 +97,8 @@ public class LogIn extends AppCompatActivity {
 
 
             setContentView(R.layout.fragment_login);
+
+
             //Toast.makeText(getApplicationContext(), "AAAAAAAA " , Toast.LENGTH_LONG).show();
 
 
@@ -235,8 +237,7 @@ public class LogIn extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "YOU ARE LOGGED AT " + currentUser.getEmail() +"\nGOOD LUCK", Toast.LENGTH_LONG).show();
                     //in the main_activity the player will be created in MyService with the fetched_logged_in_player data
                     MainActivity.setPlayerExistedBefore(true);
-                    setPlayerLoggedIn(true);
-                    startActivity(new Intent(LogIn.this, MainActivity.class));
+
 
                 }
 
@@ -251,12 +252,14 @@ public class LogIn extends AppCompatActivity {
                     fetched_logged_in_player = new Player(email);
                     Log.d("usert", "user is logged in as :" + fetched_logged_in_player);
                     MainActivity.setPlayerExistedBefore(false);
-                    setPlayerLoggedIn(true);
-                    startActivity(new Intent(LogIn.this, MainActivity.class));
+
 
                 }
 
             });
+
+            setPlayerLoggedIn(true);
+            startActivity(new Intent(LogIn.this, LoadingScreen.class));
 
         }
     }

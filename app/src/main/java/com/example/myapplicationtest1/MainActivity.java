@@ -454,6 +454,9 @@ public class MainActivity extends AppCompatActivity {
 
         show_current_position(9.0,1000L);
 
+    MainButton.callOnClick();
+
+
 
     }//oncreateend
 
