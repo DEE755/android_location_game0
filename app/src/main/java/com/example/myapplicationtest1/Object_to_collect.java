@@ -1,12 +1,13 @@
 package com.example.myapplicationtest1;
 
+import static com.example.myapplicationtest1.Location_utils.getMyCurrentGeoPoint;
+
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.PriorityQueue;
 
 //IMPORTANT: THIS CLASS IS USED TO FETCH DATA FROM THE DATABASE AND CREATE MARKERS FOR THE OBJECTS TO COLLECT
 //SO IT DOESNT NEED TO CREATE OBJECT BUT TO FETCH THEM FROM THE DATABASE
@@ -63,7 +64,15 @@ public class Object_to_collect {
         this.points = points;
     }
 
-    Marker object_marker;
+    private Marker ObjectMarker;
+
+    public Marker getObjectMarker() {
+        return ObjectMarker;
+    }
+
+    public void setObjectMarker(Marker ObjectMarker) {
+        this.ObjectMarker = ObjectMarker;
+    }
 
     static private Map <String, Marker> object_marker_map= new HashMap<>(); //like a dictionnary to store the object's key and the corresponding marker
 
@@ -79,9 +88,14 @@ public class Object_to_collect {
     }
 
 
+
+
+
+
     //CONSTRUCTOR
     Object_to_collect()
     {
+
     }
 
 
@@ -95,23 +109,28 @@ public class Object_to_collect {
 
 
 
-    public void create_object_marker(MapView mapview)
-    {
+    public void create_object_marker(MapView mapview, Player client_player) {
         double distance;
-        GeoPoint position =new GeoPoint(this.getLatitude(), this.getLongitude());
-        this.object_marker = new Marker(mapview);
-        this.object_marker.setPosition(new GeoPoint(position));
-        this.object_marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        GeoPoint position = new GeoPoint(this.getLatitude(), this.getLongitude());
+        this.ObjectMarker = new Marker(mapview);
+        this.ObjectMarker.setPosition(new GeoPoint(position));
+        this.ObjectMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
 
-        this.object_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus100_small));
-        this.setOsmIDMarker(this.object_marker.getId());
-        distance = Location_utils.DistanceCalculator.calculateDistance(Location_utils.getMyCurrentGeoPoint(), position);
-        this.object_marker.setTitle(this.getName() + "\nDistance from me: " + distance + " meters");
+        this.ObjectMarker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus100_small));
+        this.setOsmIDMarker(this.ObjectMarker.getId());
+        distance = Location_utils.DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), position);
+        this.ObjectMarker.setTitle(this.getName() + "\nDistance from me: " + distance + " meters");
         //add to map
-        mapview.getOverlays().add(object_marker);
+        mapview.getOverlays().add(ObjectMarker);
         //keep a reference to the marker from the ID of the marker to the marker itslef for modif/delete purposes
-        object_marker_map.put(this.osmIDMarker, object_marker);
+        object_marker_map.put(this.osmIDMarker, ObjectMarker);
 
+        //client_player.getList_of_Objects_Markers().add(object_marker);
+
+        int i = 0;
+
+
+        }
 
     }
 
@@ -122,4 +141,3 @@ public class Object_to_collect {
 
 
 
-}

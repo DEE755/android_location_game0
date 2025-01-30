@@ -110,19 +110,29 @@ public class LogIn extends AppCompatActivity {
         loginButton = findViewById(R.id.login_button);
         signupButton = findViewById(R.id.signup_button);
 
+        emailEditText.setVisibility(View.INVISIBLE);
+        passwordEditText.setVisibility(View.INVISIBLE);
+
 
         EditText finalEmailEditText = emailEditText;
         EditText finalPasswordEditText = passwordEditText;
 
-        //what happens when clicking the login button
+
+       //cpy as android needs
         Button finalLoginButton1 = loginButton;
         Button finalSignupButton1 = signupButton;
+        EditText finalEmailEditText1 = emailEditText;
+        EditText finalPasswordEditText1 = passwordEditText;
+
+        //what happens when clicking the login button
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
-                    finalLoginButton1.setBackgroundColor(Color.GREEN);
-                    finalSignupButton1.setBackgroundColor(Color.RED);
+                    finalEmailEditText1.setVisibility(View.VISIBLE);
+                    finalPasswordEditText1.setVisibility(View.VISIBLE);
+                    finalLoginButton1.setBackgroundColor(Color.BLUE);
+                    finalSignupButton1.setBackgroundColor(Color.DKGRAY);
                     email = finalEmailEditText.getText().toString().trim();
                     Log.d("email", email);
                     password = finalPasswordEditText.getText().toString().trim();
@@ -144,8 +154,8 @@ public class LogIn extends AppCompatActivity {
 
 
                     //finalLoginButton.setVisibility(View.INVISIBLE);
-                    finalLoginButton.setBackgroundColor(Color.RED);
-                    finalSignupButton.setBackgroundColor(Color.GREEN);
+                    finalLoginButton.setBackgroundColor(Color.DKGRAY);
+                    finalSignupButton.setBackgroundColor(Color.BLUE);
                     //finalLoginButton.setVisibility(View.INVISIBLE);
 
 

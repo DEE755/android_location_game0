@@ -405,11 +405,13 @@ Log.d("prints", "db ref for objects of " + localPlayer.getName() + " is :" +obje
                     objects.add(object);
                     Log.d("Database", "Object added: " + object.toString());
 
-                    //localPlayer.fetchObjectsToCollect(this.firebase_database;
-                    for(Object_to_collect obj: localPlayer.getList_of_objects_to_collect())
-                    {
 
-                        obj.create_object_marker(mapview);
+                    for(Object_to_collect obj: localPlayer.getList_of_objects_to_collect())
+
+                    {//all the objects to collect receive their on marker in the field object_marker
+                        obj.create_object_marker(mapview, localPlayer);
+
+
                     }
 
                 }

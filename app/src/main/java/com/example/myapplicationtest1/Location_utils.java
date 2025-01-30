@@ -2,6 +2,8 @@ package com.example.myapplicationtest1;
 
 //import static androidx.appcompat.graphics.drawable.DrawableContainerCompat.Api21Impl.getResources;
 
+import android.util.Log;
+
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -15,22 +17,29 @@ import org.osmdroid.views.overlay.Marker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 
 public class Location_utils {
 
-    public static Marker closest_marker()//should be nicer, use minqueue for distance ? use min detection
-    {int distance, min_distance=9999999;
+
+    public static Marker closest_marker(Player client_player)//should be nicer, use minqueue for distance ? use min detection
+    {int distance, min_distance=Integer.MAX_VALUE;
         Marker min_marker = null;
-        for(Map.Entry<String, Marker> entry : Object_to_collect.getObject_marker_map().entrySet() ){
+        int i=0;
+        /*for(Map.Entry<String, Marker> entry : Object_to_collect.getObject_marker_map().entrySet() ){
             distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), entry.getValue().getPosition());
-//test
+    Log.d("distance", distance+ entry.getValue().getTitle() + "iteration" +i++);*/
+
+        for(Object_to_collect object : client_player.getList_of_objects_to_collect()){
+            distance=DistanceCalculator.calculateDistance(new GeoPoint(client_player.getLatitude(), client_player.getLongitude()), object.getObjectMarker().getPosition());
             if (distance<min_distance)
             {
                 min_distance=distance;
-                min_marker=entry.getValue();
+                min_marker=object.getObjectMarker();
             }
         }
+        Log.d("min_distance","min dist"+ min_distance+ "min_marker" +min_marker);
         return min_marker;
     }
 

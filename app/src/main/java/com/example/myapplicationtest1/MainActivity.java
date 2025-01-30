@@ -378,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
                     //update distance from bus:
                     updateMarkerDistances();
 
-                    Marker min_marker=Location_utils.closest_marker();
+                    Marker min_marker=Location_utils.closest_marker(MyService.getClientPlayer());
                     int distance=Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint());
                     Log.d("distance", String.valueOf(min_marker.getPosition()));
                     if (distance <= 300 + 960-240){//TODO: maybe doesnt work in term of distance {
@@ -390,6 +390,8 @@ public class MainActivity extends AppCompatActivity {
                         //make crash
                         Log.d("db_ref", String.valueOf(mDatabase.get_db_ref()));
                         mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayerKey()).child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+                        //TODO create a method that updates the score in the player not just current score
+                        mDatabase.get_db_ref().child("all_players").child(MyService.getClientPlayer().getPlayerKey()).child("Total_Score").setValue(MyService.getClientPlayer().getCurrentScore());
 
                         //set logo to validation color
                         min_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));

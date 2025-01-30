@@ -73,6 +73,17 @@ public class Player {
     private int value;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private  List<Marker> List_of_Objects_Markers;
+
+
+    public List<Marker> getList_of_Objects_Markers() {
+
+        return List_of_Objects_Markers;
+    }
+
+    public void setList_of_Objects_Markers(List<Marker> list_of_Objects_Markers) {
+        List_of_Objects_Markers = list_of_Objects_Markers;
+    }
 
 
 
@@ -257,7 +268,7 @@ Player(String email)
     this.is_on_map =false;
     this.ObjectDeliveredStatus =false;
     this.list_of_objects_to_collect =new ArrayList<>();
-    this.list_of_objects_to_collect.add( new Object_to_collect());
+    //this.list_of_objects_to_collect.add( new Object_to_collect());
 
     //this.PlayerRefToMainDb =null;
     this.is_active=true;
@@ -281,7 +292,7 @@ Player(String email)
         this.is_on_map =false;
         this.ObjectDeliveredStatus =false;
         this.list_of_objects_to_collect =new ArrayList<>();
-        this.list_of_objects_to_collect.add( new Object_to_collect());
+        //this.list_of_objects_to_collect.add( new Object_to_collect());
 
         //this.PlayerRefToMainDb =null;
         this.is_active=true;
