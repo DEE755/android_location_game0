@@ -370,7 +370,7 @@ public class MainActivity extends AppCompatActivity {
                     //client_player.fetchObjectsToCollect(mDatabase);
 
 
-                    handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEM"), 2000);
+                    handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEMS"), 2000);
                 }
 
                 else {
@@ -378,33 +378,36 @@ public class MainActivity extends AppCompatActivity {
                     //update distance from bus:
                     updateMarkerDistances();
 
-                    Marker min_marker=Location_utils.closest_marker(MyService.getClientPlayer());
-                    int distance=Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint());
-                    Log.d("distance", String.valueOf(min_marker.getPosition()));
-                    if (distance <= 300 + 960-240){//TODO: maybe doesnt work in term of distance {
+                    Object_to_collect closest_item=MyService.getClientPlayer().closest_Object_to_collect();
+                    int distance=Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint());
+                    Log.d("distance", String.valueOf(closest_item.getObjectMarker().getPosition()));
+                    if (distance <= 1500){
                         MainButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
+                        //TODO the clientplayer score should fetch the score from the db and not put it at zero
                         MyService.getClientPlayer().addScore(100);
-                        //MyService.getClientPlayer().getPlayerRefToDb().child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
 
-                        //make crash
-                        Log.d("db_ref", String.valueOf(mDatabase.get_db_ref()));
-                        mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayerKey()).child("currentScore").setValue(MyService.getClientPlayer().getCurrentScore());
+                        mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayerKey()).child("score").setValue(MyService.getClientPlayer().getScore());
                         //TODO create a method that updates the score in the player not just current score
-                        mDatabase.get_db_ref().child("all_players").child(MyService.getClientPlayer().getPlayerKey()).child("Total_Score").setValue(MyService.getClientPlayer().getCurrentScore());
+                        mDatabase.get_db_ref().child("all_players").child(MyService.getClientPlayer().getPlayerKey()).child("score").setValue(MyService.getClientPlayer().getScore());
+
 
                         //set logo to validation color
-                        min_marker.setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
+                        closest_item.getObjectMarker().setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
+
+                        MyService.getClientPlayer().getList_of_objects_to_collect().remove(closest_item);
+
                         //ADD A FLAG TO ALREADY_TAKEN or remove from db
 //TODO either add on the object + update full object or add on db the increase of score
                         //TODO TODO: PREVENT THE SAME ITEM TO BE TAKEN MORE THEN ONE TIME ADD A FLAG
-
-
+//READY FOR NEW CATCH: UPDATE UI
+                        handler.postDelayed(() -> MainButton.setText("READY TO CATCH MORE ITEMS"), 2000);
+//TODO UPDATE UI SCORE
                     } else {
                         MainButton.setText("NO ITEM HERE");
                         Sound.ToneGenerator.toneGenerator(800, 500, (int) zoom_speed / 1000);
                         handler.postDelayed(() -> MainButton.setText("READY TO CATCH ITEM"), 2000);
-                        Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(min_marker.getPosition(), Location_utils.getMyCurrentGeoPoint())));
+                        Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint())));
                     }
 
                 }

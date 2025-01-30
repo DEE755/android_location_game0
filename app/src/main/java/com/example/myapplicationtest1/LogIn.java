@@ -242,6 +242,7 @@ public class LogIn extends AppCompatActivity {
 
                 @Override
                 public void onError(DatabaseError error) {
+                    //NOT EXISTING IN DB ==> INITIALIZING NEW PLAYER
                     Log.d("error", "error fetching player data");
                     Toast.makeText(getApplicationContext(), "THERE WAS A CRITICAL ERROR FETCHING " + currentUser.getEmail() +"\nYou're account will be reset", Toast.LENGTH_LONG).show();
 

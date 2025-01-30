@@ -37,7 +37,25 @@ public class Player {
     private String email; //email also used as primary key
     private double latitude; // Current latitude of the player
     private double longitude; // Current longitude of the player
-    private int currentScore; // Player's current score
+
+
+    private int score; // Player's current score
+
+
+
+    // Getter and Setter for Current Score
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+
+
+
+
 
     private String ref_to_logo;
 
@@ -178,7 +196,7 @@ public class Player {
         // Customize marker title
         player_marker.setTitle(
                 this.getName() +
-                        "\nDistance from me: " + distanceInMeters + " meters" + "\nScore: " + this.currentScore + "\nRank: " + this.rank
+                        "\nDistance from me: " + distanceInMeters + " meters" + "\nScore: " + this.score + "\nRank: " + this.rank
         );
         player_marker.setTitle(this.getName());
 
@@ -222,22 +240,22 @@ public class Player {
         playerRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Player player = dataSnapshot.getValue(Player.class);
-                if (player != null) {
-                    Log.d("Player", "Player data: " + player.toString());
-                    Player.this.name = player.name;
-                    Player.this.latitude = player.latitude;
-                    Player.this.longitude = player.longitude;
-                    Player.this.currentScore = player.currentScore;
+                Player playerfetched = dataSnapshot.getValue(Player.class);
+                if (playerfetched != null) {
+                    Log.d("Player", "Player data: " + playerfetched.toString());
+                    Player.this.name = playerfetched.name;
+                    Player.this.latitude = playerfetched.latitude;
+                    Player.this.longitude = playerfetched.longitude;
+                    Player.this.score = playerfetched.score;
                     Player.this.email = email;
                     Player.this.PlayerKey = email.replace(".", "_");
-                    Player.this.rank = player.rank;
-                    Player.this.is_on_map = player.is_on_map;
-                    Player.this.ObjectDeliveredStatus = player.ObjectDeliveredStatus;
-                    Player.this.list_of_objects_to_collect = player.list_of_objects_to_collect;
+                    Player.this.rank = playerfetched.rank;
+                    Player.this.is_on_map = playerfetched.is_on_map;
+                    Player.this.ObjectDeliveredStatus = playerfetched.ObjectDeliveredStatus;
+                    Player.this.list_of_objects_to_collect = playerfetched.list_of_objects_to_collect;
                     //Player.this.PlayerRefToMainDb = playerRef;
-                    Player.this.is_active = player.is_active;
-                    Player.this.ref_to_logo = player.ref_to_logo;
+                    Player.this.is_active = playerfetched.is_active;
+                    Player.this.ref_to_logo = playerfetched.ref_to_logo;
 
                     listener.onDataFetched(Player.this);
                 } else {
@@ -263,7 +281,7 @@ Player(String email)
     this.PlayerKey =email.replace(".", "_");
     this.name=email;
 
-    this.currentScore = 0; // Default score is 0
+    this.score = 0; // Default score is 0
     this.rank=0;
     this.is_on_map =false;
     this.ObjectDeliveredStatus =false;
@@ -285,7 +303,7 @@ Player(String email)
         this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.currentScore = 0; // Default score is 0
+        this.score = 0; // Default score is 0
         this.email=email;
         this.PlayerKey =email.replace(".", "_");
         this.rank=0;
@@ -352,14 +370,6 @@ Player(String email)
         this.longitude = longitude;
     }
 
-    // Getter and Setter for Current Score
-    public int getCurrentScore() {
-        return currentScore;
-    }
-
-    public void setCurrentScore(int currentScore) {
-        this.currentScore = currentScore;
-    }
 
     // Update the player's location
     public void updateLocation(double latitude, double longitude) {
@@ -378,7 +388,7 @@ Player(String email)
 
     // Add points to the player's score
     public void addScore(int points) {
-        this.currentScore += points;
+        this.score += points;
     }
 
     // Display player info
@@ -388,7 +398,7 @@ Player(String email)
                 "name='" + name + '\'' +
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
-                ", currentScore=" + currentScore +
+                ", currentScore=" + score +
                 '}';
     }
 
@@ -408,6 +418,25 @@ Player(String email)
         return this.is_on_map;
     }
 
+    public Object_to_collect closest_Object_to_collect()//should be nicer, use minqueue for distance ? use min detection
+    {int distance, min_distance=Integer.MAX_VALUE;
+        Object_to_collect closet_object = null;
+        int i=0;
+        /*for(Map.Entry<String, Marker> entry : Object_to_collect.getObject_marker_map().entrySet() ){
+            distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), entry.getValue().getPosition());
+    Log.d("distance", distance+ entry.getValue().getTitle() + "iteration" +i++);*/
+
+        for(Object_to_collect object : this.getList_of_objects_to_collect()){
+            distance= Location_utils.DistanceCalculator.calculateDistance(new GeoPoint(this.getLatitude(),this.getLongitude()), object.getObjectMarker().getPosition());
+            if (distance<min_distance)
+            {
+                min_distance=distance;
+                closet_object=object;
+            }
+        }
+        Log.d("min_distance","min dist"+ min_distance+ "min_marker" +closet_object.getObjectMarker());
+        return closet_object;
+    }
 
 
     public void send_dead_man_check(Database db, Global_Utilities.Iterator iteration )
