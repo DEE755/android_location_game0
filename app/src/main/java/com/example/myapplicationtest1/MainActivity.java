@@ -380,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
                     Object_to_collect closest_item=MyService.getClientPlayer().closest_Object_to_collect();
                     int distance=Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint());
                     Log.d("distance", String.valueOf(closest_item.getObjectMarker().getPosition()));
-                    if (distance <= 1500){
+                    if (distance <= 12){
                         //all the actions that happen when the player catches an item englobe later:
                         //Global_Utilities.Success_catch()
 
