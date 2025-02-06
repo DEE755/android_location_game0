@@ -344,7 +344,8 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Client Player", "Client player: " + clientPlayer0);
                         if (clientPlayer0 != null) {
                             if(PlayerExistedBefore==false){
-                                Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);mDatabase.addPlayerIfNotExists(clientPlayer0);
+                                Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);
+                                mDatabase.addPlayerIfNotExists(clientPlayer0);
                             }
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
                             Score_label.setText("Score: " + MyService.getClientPlayer().getScore());
@@ -385,7 +386,7 @@ public class MainActivity extends AppCompatActivity {
 
                         MainButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
-                        //TODO the clientplayer score should fetch the score from the db and not put it at zero
+
                         MyService.getClientPlayer().addScore(100);
 
                         mDatabase.get_db_ref().child("online_players").child(MyService.getClientPlayer().getPlayerKey()).child("score").setValue(MyService.getClientPlayer().getScore());
@@ -456,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         });
 
-
+        mDatabase.listenForNewOnlinePlayers(mapview,MyService.getClientPlayer());
 
     }//oncreateend
 

@@ -155,6 +155,7 @@ public class Database {
         playersRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                Log.d("Daatabase", "Fetching all players from the database.");
                 // List<Player> playersList = new ArrayList<>();
                 if (Player.online_playerList == null) {
                     Player.online_playerList = new ArrayList<>();
