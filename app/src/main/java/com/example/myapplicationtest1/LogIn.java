@@ -3,10 +3,13 @@ package com.example.myapplicationtest1;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -77,26 +80,94 @@ public class LogIn extends AppCompatActivity {
 
         //View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         //return view;
+        Log.d("Dashboard", "onCreate called");
+        super.onCreate(savedInstanceState);
+        // Start the service class
+        Intent serviceIntent = new Intent(this, MyService.class);
+        startService(serviceIntent);
+        setContentView(R.layout.activity_waitingscreen);
+        TextView waiting_text = findViewById(R.id.loading_text_view);
+        waiting_text.setText("Checking if player exists");
+        ProgressBar loadingBar = findViewById(R.id.loadingProgressBar);
+        Handler handler=new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                loadingBar.setProgress(10);
+            }
+        }, 400);
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                loadingBar.setProgress(20);
+            }
+        }, 1000);
 
 
 // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
-
-        EditText emailEditText;
-        EditText passwordEditText;
-        Button loginButton;
-        Button signupButton;
+        FirebaseUser currentUser = mAuth.getCurrentUser();
 
 
+        if (currentUser != null) {
+            String name = currentUser.getDisplayName();
+            String email = currentUser.getEmail();
+            // Display a Toast message
+            Toast.makeText(getApplicationContext(), "Hello " + currentUser.getEmail(), Toast.LENGTH_LONG).show();
+
+            //TODO: SHOW PLEASE WAIT WHILE FETCHING PLAYER DATA SCREEN
+
+            //Player fetch_player_data(currentUser.getEmail());
+            Log.d("databaseee", "db ref is: " + m_database.getDatabaseReference());
+            fetched_logged_in_player = new Player(m_database, currentUser.getEmail(), new Player.DataFetchListener() {
+                @Override
+                public void onDataFetched(Player player) {
+
+                    //MyService.setClientPlayer(new Player(MainActivity.getmDatabase(), currentUser.getEmail()));
+                    Log.d("usert", "user is logged in as :" + name + " with email: " + email);
+                    Log.d("usert", "fetched player: " + fetched_logged_in_player);
+                    Toast.makeText(getApplicationContext(), "YOU ARE LOGGED AT " + currentUser.getEmail() +"\nGOOD LUCK", Toast.LENGTH_LONG).show();
+                    //in the main_activity the player will be created in MyService with the fetched_logged_in_player data
+                    MainActivity.setPlayerExistedBefore(true);
+                    MyService.setClientPlayer(fetched_logged_in_player);
+                    startActivity(new Intent(LogIn.this, LoadingScreen.class));
+                    finish();
+
+                }
+
+                @Override
+                public void onError(DatabaseError error) {
+                    //NOT EXISTING IN DB ==> INITIALIZING NEW PLAYER
+                    Log.d("error", "error fetching player data");
+                    Toast.makeText(getApplicationContext(), "THERE WAS A CRITICAL ERROR FETCHING " + currentUser.getEmail() +"\nYou're account will be reset", Toast.LENGTH_LONG).show();
+                    setPlayerLoggedIn(true);
+                    assert email != null;
+                    MyService.setClientPlayer(new Player(email));
+                    Log.d("usert", "user is logged in as :" + MyService.getClientPlayer());
+                    MainActivity.setPlayerExistedBefore(false);
+                    setPlayerLoggedIn(true);
+                    startActivity(new Intent(LogIn.this, LoadingScreen.class));
+                    finish();
+                }
+
+            });
 
 
 
-        Log.d("Dashboard", "onCreate called");
-        super.onCreate(savedInstanceState);
 
+        }
 
-
+        else {
+            // No user is signed in
+            Toast.makeText(getApplicationContext(), "Please log in", Toast.LENGTH_LONG).show();
             setContentView(R.layout.fragment_login);
+
+
+
+
+
+
+
 
 
             //Toast.makeText(getApplicationContext(), "AAAAAAAA " , Toast.LENGTH_LONG).show();
@@ -104,55 +175,61 @@ public class LogIn extends AppCompatActivity {
 
 
 
-        //Log.d("value", String.valueOf(emailEditText));
+            //Log.d("value", String.valueOf(emailEditText));
+
+            EditText emailEditText;
+            EditText passwordEditText;
+            Button loginButton;
+            Button signupButton;
 
 
-        emailEditText = findViewById(R.id.username);
-        passwordEditText = findViewById(R.id.password);
-        loginButton = findViewById(R.id.login_button);
-        signupButton = findViewById(R.id.signup_button);
-
-        emailEditText.setVisibility(View.INVISIBLE);
-        passwordEditText.setVisibility(View.INVISIBLE);
+            emailEditText = findViewById(R.id.username);
+            passwordEditText = findViewById(R.id.password);
+            loginButton = findViewById(R.id.login_button);
+            signupButton = findViewById(R.id.signup_button);
 
 
-        EditText finalEmailEditText = emailEditText;
-        EditText finalPasswordEditText = passwordEditText;
+            emailEditText.setVisibility(View.INVISIBLE);
+            passwordEditText.setVisibility(View.INVISIBLE);
 
 
-       //cpy as android needs
-        Button finalLoginButton1 = loginButton;
-        Button finalSignupButton1 = signupButton;
-        EditText finalEmailEditText1 = emailEditText;
-        EditText finalPasswordEditText1 = passwordEditText;
+            EditText finalEmailEditText = emailEditText;
+            EditText finalPasswordEditText = passwordEditText;
 
-        //what happens when clicking the login button
-        loginButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    finalEmailEditText1.setVisibility(View.VISIBLE);
-                    finalPasswordEditText1.setVisibility(View.VISIBLE);
-                    finalLoginButton1.setBackgroundColor(Color.BLUE);
-                    finalSignupButton1.setBackgroundColor(Color.DKGRAY);
-                    email = finalEmailEditText.getText().toString().trim();
-                    Log.d("email", email);
-                    password = finalPasswordEditText.getText().toString().trim();
-                    Log.d("email", password);
-                    loginUser(email, password);
-                } catch (Exception e) {
-                    Log.d("Error", e.getMessage());
+
+            //cpy as android needs
+            Button finalLoginButton1 = loginButton;
+            Button finalSignupButton1 = signupButton;
+            EditText finalEmailEditText1 = emailEditText;
+            EditText finalPasswordEditText1 = passwordEditText;
+
+            //what happens when clicking the login button
+            loginButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        finalEmailEditText1.setVisibility(View.VISIBLE);
+                        finalPasswordEditText1.setVisibility(View.VISIBLE);
+                        finalLoginButton1.setBackgroundColor(Color.BLUE);
+                        finalSignupButton1.setBackgroundColor(Color.DKGRAY);
+                        email = finalEmailEditText.getText().toString().trim();
+                        Log.d("email", email);
+                        password = finalPasswordEditText.getText().toString().trim();
+                        Log.d("email", password);
+                        loginUser(email, password);
+                    } catch (Exception e) {
+                        Log.d("Error", e.getMessage());
+                    }
                 }
-            }
-        });
+            });
 
 
-        //what happens when clicking the signup button
-        Button finalLoginButton = loginButton;
-        Button finalSignupButton = signupButton;
-        signupButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+            //what happens when clicking the signup button
+            Button finalLoginButton = loginButton;
+            Button finalSignupButton = signupButton;
+            signupButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
 
 
                     //finalLoginButton.setVisibility(View.INVISIBLE);
@@ -165,11 +242,7 @@ public class LogIn extends AppCompatActivity {
                         Toast.makeText(LogIn.this, "Please fill in all the fields", Toast.LENGTH_SHORT).show();
 
 
-
-
-                    }
-
-                    else {
+                    } else {
                         email = finalEmailEditText.getText().toString().trim();
                         Log.d("email", email);
                         password = finalPasswordEditText.getText().toString().trim();
@@ -200,8 +273,10 @@ public class LogIn extends AppCompatActivity {
                     }
 
 
-            }
-        });
+                }
+            });
+
+        }
 
 
 
@@ -213,55 +288,10 @@ public class LogIn extends AppCompatActivity {
 
     @Override
     public void onStart() {
+
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        // After
-        if (currentUser != null) {
-            String name = currentUser.getDisplayName();
-            String email = currentUser.getEmail();
-            // Display a Toast message
-            Toast.makeText(getApplicationContext(), "Hello " + currentUser.getEmail(), Toast.LENGTH_LONG).show();
 
-            //TODO: SHOW PLEASE WAIT WHILE FETCHING PLAYER DATA SCREEN
-
-            //Player fetch_player_data(currentUser.getEmail());
-            Log.d("databaseee", "db ref is: " + m_database.getDatabaseReference());
-            fetched_logged_in_player = new Player(m_database, currentUser.getEmail(), new Player.DataFetchListener() {
-                @Override
-                public void onDataFetched(Player player) {
-
-                    //MyService.setClientPlayer(new Player(MainActivity.getmDatabase(), currentUser.getEmail()));
-                    Log.d("usert", "user is logged in as :" + name + " with email: " + email);
-                    Log.d("usert", "fetched player: " + fetched_logged_in_player);
-                    Toast.makeText(getApplicationContext(), "YOU ARE LOGGED AT " + currentUser.getEmail() +"\nGOOD LUCK", Toast.LENGTH_LONG).show();
-                    //in the main_activity the player will be created in MyService with the fetched_logged_in_player data
-                    MainActivity.setPlayerExistedBefore(true);
-
-
-                }
-
-                @Override
-                public void onError(DatabaseError error) {
-                    //NOT EXISTING IN DB ==> INITIALIZING NEW PLAYER
-                    Log.d("error", "error fetching player data");
-                    Toast.makeText(getApplicationContext(), "THERE WAS A CRITICAL ERROR FETCHING " + currentUser.getEmail() +"\nYou're account will be reset", Toast.LENGTH_LONG).show();
-
-
-                    assert email != null;
-                    fetched_logged_in_player = new Player(email);
-                    Log.d("usert", "user is logged in as :" + fetched_logged_in_player);
-                    MainActivity.setPlayerExistedBefore(false);
-
-
-                }
-
-            });
-
-            setPlayerLoggedIn(true);
-            startActivity(new Intent(LogIn.this, LoadingScreen.class));
-
-        }
     }
 }
 

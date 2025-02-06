@@ -251,6 +251,24 @@ public class Database {
         Log.d("Databasee", "Player added tod main db: " + clientPlayer.getName());
     }
 
+    public void update_player_loc_db(Player clientPlayer, double userLatitude, double userLongitude)
+    {
+        // Update the player's location in the database
+        // Create a map to store the new location
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("latitude", userLatitude);
+        updates.put("longitude", userLongitude);
+
+        // Update the player's location in the database
+        db_ref.child("online_players").child(clientPlayer.getPlayerKey()).updateChildren(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("Databaase", "Player location updated successfully.");
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Databaase", "Failed to update player location", e);
+                });
+    }
+
 
     // Callback interface
     public interface PlayersCallback {

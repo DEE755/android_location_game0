@@ -286,7 +286,7 @@ Player(String email)
     this.is_on_map =false;
     this.ObjectDeliveredStatus =false;
     this.list_of_objects_to_collect =new ArrayList<>();
-    //this.list_of_objects_to_collect.add( new Object_to_collect());
+    this.list_of_objects_to_collect.add( new Object_to_collect());
 
     //this.PlayerRefToMainDb =null;
     this.is_active=true;

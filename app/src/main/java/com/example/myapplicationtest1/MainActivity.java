@@ -239,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
         IMapController mapController = mapview.getController();
         //mapController.setZoom(zoom_factor);
 
-            mapController.animateTo(new GeoPoint(32.08, 34.7), zoom_factor, speed);
+            mapController.animateTo(new GeoPoint(getUserLatitude(), getUserLongitude()), zoom_factor, speed);
 
     }
     private int l=0;
@@ -261,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
         Score_label.setText("Score: 0");
         Score_label.setBackgroundColor(Color.GREEN);
 
-        mediaPlayer = MediaPlayer.create(this, R.raw.sound1);
+
 
 
 
@@ -274,14 +274,6 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
-
-
-
-        // Start the service class
-        Intent serviceIntent = new Intent(this, MyService.class);
-        startService(serviceIntent);
-
-
 
 
         // Set button initially disabled until location is fetched
@@ -316,15 +308,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Handle button click
         MainButton.setOnClickListener(v -> {
-           // if (mediaPlayer != null) {
-                //mediaPlayer.start();}
-
 
 
             //Utilities initialization:
             // Inside onCreate method
-            Global_Utilities utilities = new Global_Utilities();
-            Global_Utilities.Iterator iteration = new Global_Utilities.Iterator();
+            //Global_Utilities utilities = new Global_Utilities();
+            //Global_Utilities.Iterator iteration = new Global_Utilities.Iterator();
 
                 //Sound.ToneGenerator Tonegen=new Sound.ToneGenerator();
                 Handler handler = new Handler(Looper.getMainLooper());
@@ -343,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
 
                     //ACTUAL LOCAL PLAYER:
                     //first loc is sent to the server after pressing the start button then updated here
+                    Log.d("Client Player", "Client player: " + MyService.getClientPlayer());
                     MyService.getClientPlayer().setLatitude(getUserLatitude());
                     MyService.getClientPlayer().setLongitude(getUserLongitude());
 
@@ -358,6 +348,8 @@ public class MainActivity extends AppCompatActivity {
                             }
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
                             Score_label.setText("Score: " + MyService.getClientPlayer().getScore());
+
+                            Time_based_operations.updatePlayerLocation();
 
                             //USING BOTH MAKES CRASH !! even after completion
                             //but doing allplayers then only the client player makes crash
@@ -437,6 +429,7 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     LOCATION_PERMISSION_REQUEST_CODE);
         } else {
+            Log.d("MainAcctivity", "Location permission already granted");
             // Permission already granted, proceed with getting location
             fetchLocation();
         }
@@ -445,16 +438,23 @@ public class MainActivity extends AppCompatActivity {
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         //inflate and create the map
         //setContentView(R.layout.activity_main);// makes crashing
-
+        Log.d("MainActivity", "creating map view");
         mapview = findViewById(R.id.map);
         mapview.setTileSource(TileSourceFactory.MAPNIK);
-
+        Log.d("MainActivity", " map view created");
 
 
 
         show_current_position(9.0,1000L);
 
-    MainButton.callOnClick();
+    //MainButton.callOnClick();
+        Button Quit_button=findViewById(R.id.quit_button);
+
+        Quit_button.setOnClickListener(v -> {
+
+            MyService.onQuitApp(MyService.getClientPlayer(),mDatabase);
+            finish();
+        });
 
 
 
@@ -466,9 +466,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onLocationResult(LocationData locationData) {
                 setUserLatitude(locationData.getLatitude());
+                Log.d("MainsActivity", "Latitude: " + getUserLatitude());
                 setUserLongitude(locationData.getLongitude());
-
-
+                MyService.getClientPlayer().setLatitude(getUserLatitude());
+                MyService.getClientPlayer().setLongitude(getUserLongitude());
+                //mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
                 if(MarkersCreatedFlag ==false){
@@ -636,36 +638,6 @@ public class MainActivity extends AppCompatActivity {
                     callback.onError("Failed to get location: " + e.getMessage());
                 });
     }
-
-    // Handle the result of permission requests
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0) {
-                boolean fineLocationGranted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                boolean coarseLocationGranted = grantResults.length > 1 && grantResults[1] == PackageManager.PERMISSION_GRANTED;
-
-                if (fineLocationGranted || coarseLocationGranted) {
-                    // Permissions granted, proceed with fetching location
-                    fetchLocation();
-                } else {
-                    // Permissions denied, disable location functionality
-                    Toast.makeText(this, "Location permissions denied.", Toast.LENGTH_SHORT).show();
-                    MainButton.setText("Location Disabled");
-                }
-            }
-        }
-    }
-
-
-
-
-
-
-
 
 
     private void updateMarkerDistances() {

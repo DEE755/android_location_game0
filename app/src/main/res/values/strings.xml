@@ -5,4 +5,5 @@
     <string name="title_notifications">Notifications</string>
     <string name="score">Score:</string>
     <string name="loading_game_content_n_please_wait">Loading game Content\n Please wait!</string>
+    <string name="credits">Credits</string>
 </resources>

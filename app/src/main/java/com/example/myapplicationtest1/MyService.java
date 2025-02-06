@@ -2,6 +2,7 @@ package com.example.myapplicationtest1;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -18,6 +19,9 @@ public class MyService extends Service {
         return ClientPlayer;
     }
 
+    public static void setClientPlayer(Player clientPlayer) {
+        ClientPlayer = clientPlayer;
+    }
 
 
     @Override
@@ -26,7 +30,7 @@ public class MyService extends Service {
         // Initialize your database and player here
         //mDatabase = new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
 
-        ClientPlayer = LogIn.getFetched_logged_in_player();
+        //ClientPlayer = LogIn.getFetched_logged_in_player();
 
 
     }
@@ -43,15 +47,25 @@ public class MyService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         Log.d("test", ClientPlayer.getName() + "removed from db");
         super.onTaskRemoved(rootIntent);
+        Handler handler = new Handler();
         onQuitApp(ClientPlayer, mDatabase);
-        stopSelf(); // Ensure the service stops after task is removed
+
+        handler.postDelayed(() -> {
+            Log.d("test", "onTaskRemoved called");
+            stopSelf();
+        }, 5000);
+
+        //stopSelf(); // Ensure the service stops after task is removed
     }
 
     @Override
     public void onDestroy() {
         Log.d("Database", "Service destroyed, removing player from database");
+        Handler handler = new Handler();
         onQuitApp(ClientPlayer, mDatabase);
-        super.onDestroy();
+            super.onDestroy();
+
+
     }
 
     public static void onQuitApp(Player player_to_remove, Database database) {
@@ -69,6 +83,7 @@ public class MyService extends Service {
                 Log.e("Database", "Failed to remove player: " + player_to_remove.getPlayerKey(), task.getException());
             }
         });
+
     }
 
     @Nullable
