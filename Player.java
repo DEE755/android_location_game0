@@ -120,7 +120,6 @@ public class Player {
     }
 
 
-
     //private DatabaseReference PlayerRefToMainDb;
 
     //public DatabaseReference getPlayerRefToMainDb(){
@@ -169,7 +168,6 @@ public class Player {
         void onDataFetched(Player player);
         void onError(DatabaseError error);
     }
-
 
 
     public static Map getPlayerMarkerMap() {
@@ -244,9 +242,6 @@ public class Player {
         return player_marker;
 
 
-
-
-
     }
 
     public int getRank()
@@ -277,13 +272,9 @@ public class Player {
                     Player.this.list_of_objects_to_collect = playerfetched.list_of_objects_to_collect;
                     //Player.this.PlayerRefToMainDb = playerRef;
 
-
                     Player.this.is_active = playerfetched.is_active;
                     //Player.this.ref_to_profile_pic = playerfetched.ref_to_profile_pic;
                     Player.this.ref_to_profile_pic = playerfetched.getPlayerKey().replace(".","_")+"_logo";
-
-
-
 
                     // Notify the listener that the data has been fetched
                     listener.onDataFetched(Player.this);
@@ -302,7 +293,6 @@ public class Player {
     }
 
     public Player(){}
-
 
 Player(String email, String input_name, Bitmap profile_pic, Database db)
 {
@@ -323,12 +313,8 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
     //this.PlayerRefToMainDb =null;
     this.is_active=true;
 
-
     player_counter++;
     ref_to_profile_pic =name.toLowerCase().replace(" ", "_")+"_logo";
-
-
-
 }
 
     public Player(String name, double latitude, double longitude, String email, Database db) {
@@ -343,28 +329,12 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
         this.ObjectDeliveredStatus =false;
         this.list_of_objects_to_collect =new ArrayList<>();
         //this.list_of_objects_to_collect.add( new Object_to_collect());
-
         //this.PlayerRefToMainDb =null;
         this.is_active=true;
-
-
-
-
-
-
         player_counter++;
         ref_to_profile_pic =name.toLowerCase().replace(" ", "_")+"_logo";
-
-
         //online_playerList.add(this);
-
-
-
     }
-
-
-
-
 
     // Getter and Setter for Name
     public String getName() {
@@ -470,15 +440,11 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
         return closet_object;
     }
 
-
     public void send_dead_man_check(Database db, Global_Utilities.Iterator iteration )
     {
 
-
         Runnable task = new Runnable() {
             @Override
-
-
             public void run() {
 
                 // Update the object
@@ -493,13 +459,7 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
                         Log.d("Player" , "triggered true "+ iteration.getIterator_nb());
 
                         break;
-
-
                 }
-
-
-
-
             }
         };
 
@@ -510,7 +470,6 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
     public void stopPeriodicUpdate() {
         scheduler.shutdown();
     }
-
 
 
 }

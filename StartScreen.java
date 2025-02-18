@@ -11,9 +11,12 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.media.MediaPlayer;
+import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -29,6 +32,14 @@ public class StartScreen extends AppCompatActivity {
     private MediaPlayer mediaPlayer2;
 
     private CameraHandler cameraHandler;
+    FragmentManager fragmentManager;
+    FragmentTransaction fragmentTransaction;
+    LeaderBoard leaderboardFragment;
+    FrameLayout fragmentContainer;
+
+
+
+
     public void click_sound() {
         if (mediaPlayer2 != null && mediaPlayer2.isPlaying()) {
             mediaPlayer2.stop();
@@ -44,6 +55,8 @@ public class StartScreen extends AppCompatActivity {
         Button QuitButton;
         Button PlayButton;
         Button CreditsButton;
+        Button LeaderBoardButton;
+
         sound1 = new Sound();
         Log.d("Dashboard", "onCreate called");
         super.onCreate(savedInstanceState);
@@ -60,6 +73,8 @@ public class StartScreen extends AppCompatActivity {
         PlayButton = findViewById(R.id.play_button);
 
         CreditsButton = findViewById(R.id.credits_button);
+
+        LeaderBoardButton = findViewById(R.id.leaderboard_button);
 
         mediaPlayer = MediaPlayer.create(this, R.raw.coin_catch);
         if (mediaPlayer != null) {
@@ -107,6 +122,16 @@ public class StartScreen extends AppCompatActivity {
 
         });
 
+        LeaderBoardButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                leaderboardFragment = new LeaderBoard();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_leaderboard, leaderboardFragment);
+                fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
+            }
+        });
 
         //what happens when clicking the quit button
         QuitButton.setOnClickListener(new View.OnClickListener() {
@@ -123,9 +148,11 @@ public class StartScreen extends AppCompatActivity {
         CreditsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                cameraHandler = new CameraHandler(StartScreen.this);
+
                 click_sound();
-                cameraHandler.takePicture(StartScreen.this);
+                Intent newIntent = new Intent(StartScreen.this, Credits.class);
+                startActivity(newIntent);
+                finish();
 
             }
 
@@ -134,11 +161,6 @@ public class StartScreen extends AppCompatActivity {
 
 
     }
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        Log.d("StartScreen", "Before super called");
-        super.onActivityResult(requestCode, resultCode, data);
-        Log.d("StartScreen", "onActivityResult called");
-        cameraHandler.handleActivityResult(requestCode, resultCode, data);
-    }
+
 }
+

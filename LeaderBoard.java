@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
@@ -34,15 +35,22 @@ public class LeaderBoard extends Fragment
         mediaPlayer.start();
 
         View view = inflater.inflate(R.layout.fragment_leaderboard, leaderboard, false);
-        GridLayout gridLayout = view.findViewById(R.id.grid);
+        WebView table_web = view.findViewById(R.id.table_web);
+        //GridLayout gridLayout = view.findViewById(R.ids.grid);
 
         TextView textView = view.findViewById(R.id.rank_text);
         textView.setText("Rank: " + getClientPlayer().getRank());
 
+        table_web.loadUrl("https://android-location-game0.web.app/leaderboard.html");
+
+        table_web.getSettings().setJavaScriptEnabled(true);
+
+
+
         //gridLayout.setColumnCount(3);
         //gridLayout.addView(new LeaderboardItem(getContext(), "1", "Player 1", "1000"));
 
-        return inflater.inflate(R.layout.fragment_leaderboard, leaderboard, false);
+        return view;
 
     }
 
