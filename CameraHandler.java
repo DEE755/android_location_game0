@@ -7,6 +7,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Shader;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -53,11 +57,25 @@ public class CameraHandler {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             Log.d("CameraHandler", "Handling activity result");
-            return imageBitmap;
 
+            int desiredWidth = 62;
+            int desiredHeight = 62;
+
+            // Resize the bitmap to the desired dimensions
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, desiredWidth, desiredHeight, true);
+
+            // Create a circular bitmap
+            Bitmap circularBitmap = Bitmap.createBitmap(desiredWidth, desiredHeight, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(circularBitmap);
+            Paint paint = new Paint();
+            paint.setAntiAlias(true);
+            paint.setShader(new BitmapShader(resizedBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+            float radius = Math.min(desiredWidth, desiredHeight) / 2.0f;
+            canvas.drawCircle(desiredWidth / 2.0f, desiredHeight / 2.0f, radius, paint);
+
+            return circularBitmap;
+        } else {
+            return null;
         }
-
-        else return null;
-        //TODO MAYBE HANDLE ERROR BUT IT NEVER HAPPENS
     }
 }

@@ -2,6 +2,7 @@ package com.example.myapplicationtest1;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.util.Log;
 
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -73,7 +74,7 @@ public class Player {
 
 
 
-    private String ref_to_profile_pic;
+    private String ref_to_logo;
 
     private boolean ObjectDeliveredStatus;
 
@@ -199,6 +200,11 @@ public class Player {
 
 
     public Marker create_player_marker(MapView mapView, Player player) {
+        if (this == null) {
+            Log.d("crash", "player_marker is null: ");
+            return null;
+        }
+
         Log.d("crash", "entered create_player_marker: ");
         Marker player_marker = new Marker(mapView);
         player_marker.setPosition(new GeoPoint(this.getLatitude(), this.getLongitude()));
@@ -212,22 +218,33 @@ public class Player {
                 this.getName() +
                         "Distance from me: " + distanceInMeters + " meters" + "\nScore: " + player.getScore() + "\nRank: " + player.getRank()
         );
-        player_marker.setTitle(this.getName());
+        //player_marker.setTitle(this.getName());
 
 
         //Profile pic logo HANDLING
         try{
-            String logo_name =(player.name==null)? "default_logo":getRef_to_logo();
-           player.name =(player.name==null)? "found_null":player.name;
-            Log.d("crash", "logo_name: "+logo_name);
+            //String logo_name =(player.name==null)? "default_logo":getRef_to_logo();
+           //player.name =(player.name==null)? "found_null":player.name;
+            //Log.d("crash", "logo_name: "+logo_name);
 
             //if(logo_name=="phone_owner(real_location_data)_logo")
             //{logo_name="harry_potter_logo";}
 
-            logo_name="harry_potter_logo";
-            int resourceId = mapView.getContext().getResources().getIdentifier(logo_name, "drawable", mapView.getContext().getPackageName());
-            player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));
-            Log.d("crash", "after logo handling: ");
+           // logo_name="harry_potter_logo";
+            Storage_Service storage = new Storage_Service(mapView.getContext());
+            storage.getPlayerImageFromStorage(player, new OnSuccessListener<Bitmap>() {
+                @Override
+                public void onSuccess(Bitmap bitmap) {
+                    player.setProfile_pic(bitmap);
+                    //player_marker.setIcon(mapView.getContext().getResources().getDrawable(R.drawable.harry_potter_logo));
+                    player_marker.setIcon(new BitmapDrawable(mapView.getContext().getResources(), player.getProfile_pic()));
+                    Log.d("crash", "after logo handling: ");
+                }
+            });
+
+            //int resourceId = mapView.getContext().getResources().getIdentifier(logo_name, "drawable", mapView.getContext().getPackageName());
+            //player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));
+            //Log.d("crash", "after logo handling: ");
         }
 
 
@@ -274,7 +291,7 @@ public class Player {
 
                     Player.this.is_active = playerfetched.is_active;
                     //Player.this.ref_to_profile_pic = playerfetched.ref_to_profile_pic;
-                    Player.this.ref_to_profile_pic = playerfetched.getPlayerKey().replace(".","_")+"_logo";
+                    Player.this.ref_to_logo = playerfetched.getPlayerKey().replace(".","_")+"_logo";
 
                     // Notify the listener that the data has been fetched
                     listener.onDataFetched(Player.this);
@@ -301,7 +318,7 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
     this.name=input_name;
 
     this.profile_pic=profile_pic;
-    this.ref_to_profile_pic="player_pics/"+email.toLowerCase().replace(".", "_")+"_logo";
+    this.ref_to_logo ="player_pics/"+email.toLowerCase().replace(".", "_")+"_logo";
 
     this.score = 0; // Default score is 0
     this.rank=0;
@@ -314,7 +331,7 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
     this.is_active=true;
 
     player_counter++;
-    ref_to_profile_pic =name.toLowerCase().replace(" ", "_")+"_logo";
+    ref_to_logo =email.toLowerCase().replace(" ", "_")+"_logo";
 }
 
     public Player(String name, double latitude, double longitude, String email, Database db) {
@@ -332,7 +349,7 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
         //this.PlayerRefToMainDb =null;
         this.is_active=true;
         player_counter++;
-        ref_to_profile_pic =name.toLowerCase().replace(" ", "_")+"_logo";
+        ref_to_logo =email.toLowerCase().replace(" ", "_")+"_logo";
         //online_playerList.add(this);
     }
 
@@ -407,10 +424,10 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
 
     public String getRef_to_logo() {
 
-        if (ref_to_profile_pic ==null){
-            ref_to_profile_pic ="default_logo";
+        if (ref_to_logo ==null){
+            ref_to_logo ="default_logo";
         }
-        return ref_to_profile_pic;
+        return ref_to_logo;
     }
 
     public void setIs_on_map(boolean online_status){

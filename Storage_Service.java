@@ -50,7 +50,7 @@ public class Storage_Service {
                 }).addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "Error downloading image: " + e.getMessage());
+                                Log.e(TAG, "Error downloading image: "  + player.getRef_to_logo() + "url:"   + e.getMessage());
                         }
                 });
         }
