@@ -100,7 +100,7 @@ public class Database {
                         //while(player.getPlayerRefToDb()==null){Log.d("Database", "Waiting for ref to update");}
                         listenForObjectsToCollect(player, mapview);
                         //player.setPlayerRefToOnlineDb(player_ref);
-
+                        player.setIs_on_map(true);
                         //MainActivity.getmDatabase().addPlayerIfNotExists(player);
                     }
                 })
@@ -314,6 +314,7 @@ public class Database {
                 if (newPlayer != null) {
                     Log.d("crash", "player not null");
                     try {
+                        //prevent self recognition
                     if (Objects.equals(newPlayer.getPlayerKey(), MyService.getClientPlayer().getPlayerKey()))
                     {return;}
                     } catch (Exception e) {
@@ -359,44 +360,72 @@ public class Database {
                 //TODO update the location here and info about the player
 
 
+                Player changedPlayer = dataSnapshot.getValue(Player.class);
+
+                if (changedPlayer != null) {
+                    Log.d("crash", "player not null");
+                    try {
+                        //prevent self recognition
+                        String has_moved_player_key = changedPlayer.getPlayerKey();
+                        if (Objects.equals(has_moved_player_key, MyService.getClientPlayer().getPlayerKey())) {
+                            return;
+                        }
+
+                        //GO TO THE LOCAL MARKER OF THAT SPECIFIC PLAYER TO CHANGE ITS POSITION
+                        Marker has_moved_player_marker = Player.getPlayerMarkerMap().get(has_moved_player_key);
+                        if (has_moved_player_marker == null) {
+                            Log.d("crash", "player marker is null");
+                            return;
+                        }
+                        has_moved_player_marker.setPosition(new GeoPoint(changedPlayer.getLatitude(), changedPlayer.getLongitude()));
+                        has_moved_player_marker.setTitle(changedPlayer.getName()+" Distance from me:" + Location_utils.DistanceCalculator.calculateDistance(new GeoPoint(MyService.getClientPlayer().getLatitude(), MyService.getClientPlayer().getLongitude()), new GeoPoint(changedPlayer.getLatitude(), changedPlayer.getLongitude())));
+                    } catch (Exception e) {
+                        Log.d("crash", "crashing here");
+                        throw new RuntimeException(e);
+
+                    }
+                }
             }
 
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-                //Log.d("Database", "Player removed: " + dataSnapshot.getKey());
-                //Player deletedPlayer = dataSnapshot.getValue(Player.class);
 
-                //deletedPlayer.setPlayer_key(dataSnapshot.getKey());
-                mapview.getOverlays().remove(Player.getPlayerMarkerMap().get(dataSnapshot.getKey()));
-                //delete the java map object
-                Player.getPlayerMarkerMap().remove(dataSnapshot.getKey());
+                    @Override
+                    public void onChildRemoved (DataSnapshot dataSnapshot){
+                        //Log.d("Database", "Player removed: " + dataSnapshot.getKey());
+                        //Player deletedPlayer = dataSnapshot.getValue(Player.class);
 
-                mapview.invalidate();
+                        //deletedPlayer.setPlayer_key(dataSnapshot.getKey());
+                        mapview.getOverlays().remove(Player.getPlayerMarkerMap().get(dataSnapshot.getKey()));
+                        //delete the java map object
+                        Player.getPlayerMarkerMap().remove(dataSnapshot.getKey());
 
-            }
+                        mapview.invalidate();
 
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
+                    }
 
-                Log.d("Database", "Player moved: " + dataSnapshot.getKey());
-                //TODO MOVE TO ONCHILD CHANGE RATHER THAN HERE
+                    @Override
+                    public void onChildMoved (DataSnapshot dataSnapshot, String previousChildName){
 
-                //update in object by key: create a method to map object with key
-                //.......//
-                GeoPoint new_coordinates = new GeoPoint(dataSnapshot.child("latitude").getValue(Double.class), dataSnapshot.child("longitude").getValue(Double.class));
-                Marker marker_to_update = (Marker) Player.getPlayerMarkerMap().get(dataSnapshot.getKey());
+                        Log.d("Database", "Player moved: " + dataSnapshot.getKey());
+                        //TODO MOVE TO ONCHILD CHANGE RATHER THAN HERE
 
-                //update object on map layer == update the marker
-                marker_to_update.setPosition(new_coordinates);
-                // Handle child moved
-            }
+                        //update in object by key: create a method to map object with key
+                        //.......//
+                        GeoPoint new_coordinates = new GeoPoint(dataSnapshot.child("latitude").getValue(Double.class), dataSnapshot.child("longitude").getValue(Double.class));
+                        Marker marker_to_update = (Marker) Player.getPlayerMarkerMap().get(dataSnapshot.getKey());
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e("Database", "Error listening for new online players", databaseError.toException());
-            }
+                        //update object on map layer == update the marker
+                        marker_to_update.setPosition(new_coordinates);
+                        // Handle child moved
+                    }
+
+                    @Override
+                    public void onCancelled (DatabaseError databaseError){
+                        Log.e("Database", "Error listening for new online players", databaseError.toException());
+                    }
+
         });
     }
+
 
     //when it detects that the list of objects' been added to the localPlayer
     //cascade of listening

@@ -6,11 +6,9 @@ import static com.example.myapplicationtest1.Location_utils.setUserLatitude;
 import static com.example.myapplicationtest1.Location_utils.setUserLongitude;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -180,6 +178,29 @@ public class MainActivity extends AppCompatActivity {
     FragmentTransaction fragmentTransaction;
     LeaderBoard leaderboardFragment;
     FrameLayout fragmentContainer;
+
+
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable runnable;
+    private final int interval = 2000; // Interval in milliseconds (e.g., 5000ms = 5 seconds)
+
+    private void start_cycling_fetching_location() {
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                // Code to execute every x seconds
+                fetchLocation();
+                // Re-post the runnable with a delay of x seconds
+                handler.postDelayed(this, interval);
+            }
+        };
+        handler.post(runnable);
+    }
+
+    private void stop_cycling_fetching_location() {
+        handler.removeCallbacks(runnable);
+    }
+
 
 
     //private FirebaseAnalytics mFirebaseAnalytics;
@@ -375,7 +396,7 @@ public class MainActivity extends AppCompatActivity {
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
                             Score_label.setText(clientPlayer0.getName()+ "- Score: " + MyService.getClientPlayer().getScore());
 
-                            Time_based_operations.updatePlayerLocation();
+                            //Time_based_operations.updatePlayerLocation();
 
 
                         }
@@ -455,7 +476,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Log.d("MainAcctivity", "Location permission already granted");
             // Permission already granted, proceed with getting location
-            fetchLocation();
+            //fetchLocation();
+            start_cycling_fetching_location();
         }
 
         Context ctx = getApplicationContext();
@@ -510,7 +532,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void fetchLocation() {
+    public void fetchLocation() {
         getCurrentLocation(new MyLocationCallback() {
             @Override
             public void onLocationResult(LocationData locationData) {
@@ -519,10 +541,11 @@ public class MainActivity extends AppCompatActivity {
                 setUserLongitude(locationData.getLongitude());
                 MyService.getClientPlayer().setLatitude(getUserLatitude());
                 MyService.getClientPlayer().setLongitude(getUserLongitude());
+                Log.d("tracking", "Latitude: " + getUserLatitude() + "Longitude:" + getUserLongitude());
                 //mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
-                if(MarkersCreatedFlag ==false){
+                if (MarkersCreatedFlag == false) {
                     MainButton.setText("START GAME");
                     MainButton.setEnabled(true);
                     MainButton.setBackgroundColor(Color.GREEN);
@@ -537,12 +560,13 @@ public class MainActivity extends AppCompatActivity {
                     //put all Players in the list online_playerList
                     //the list_online_playerList is reconstituted every time some of the data changes in the database
 
-                MarkersCreatedFlag =true;
-                }
+                    MarkersCreatedFlag = true;
+                } else {
 
-                else {
-
-                    //mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
+                    if (MyService.getClientPlayer().getIs_on_map())
+                    {
+                        mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(), getUserLongitude());
+                    }
 
 
                     //Location_utils.updatePlayersMarkers();
@@ -551,98 +575,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
 
-                //SIMULATION OF PLAYERS ENTERING THE GAME
-
-                   // switch (p){
-                        //case 15:
-                          //  mDatabase.add_player_to_online_db(Spiderman_player,mapview);
-
-                          //  Log.d("MainActivity", "Michael J entered the online  db");
-                        //    break;
-
-                    //    case 30:
-                         //   mDatabase.add_player_to_online_db(Michael_Jackson_player, mapview);
-
-                         //   break;
-
-                       // case 50:
-                        //    mDatabase.removePlayerFromDatabase(Michael_Jackson_player.getEmail());
-
-                        //    Log.d("MainActivity", "Spiderman entered the online db");
-                        //    break;
-
-
-                      //  case 75:
-                            //mDatabase.add_player_to_db(Batman_player, mapview);
-                      //      Log.d("MainActivity", "New player entered the online db");
-                      //      break;
-
-
-                      //  case 85:mDatabase.removePlayerFromDatabase(Spiderman_player.getEmail());
-                       //     break;
-
-                      //  case 150:
-
-                         //   mDatabase.add_player_to_online_db(Superman_player, mapview);
-
-
-                         //   Log.d("MainActivity", "New player entered the online db");
-                          //  break;
-
-                       // case 200:
-                         //   mDatabase.add_player_to_online_db(Harry_Potter_player, mapview);
-                         //   Log.d("MainActivity", "New player entered the online db");
-                         //   break;
-
-                       // case 220:
-                           // mDatabase.removePlayerFromDatabase(Superman_player.getEmail());
-                           // break;
-                        //case 250:
-                            //mDatabase.add_player_to_online_db(Mary_Poppins_player, mapview);
-
-                            //Log.d("MainActivity", "New player entered the online db");
-                            //break;
-
-                        //case 270: mDatabase.removePlayerFromDatabase(Mary_Poppins_player.getEmail());
-
-                        //case 300:
-                            //mDatabase.removePlayerFromDatabase(Harry_Potter_player.getEmail());
-
-                            // Remove the 'online_players' node
-                            /*mDatabase.get_db_ref().child("online_players").removeValue()
-                                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                    @Override
-                                    public void onSuccess(Void aVoid) {
-                                        // Successfully deleted the node
-                                        Log.d("Firebase", "Online_players node deleted successfully.");
-                                    }
-                                })
-                                .addOnFailureListener(new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        // Failed to delete the node
-                                        Log.e("Firebase", "Error deleting online_players node", e);
-                                    }
-                                });*/
-                //break;
-                    }
-
-
-            //p=p%330 +1;
-
-
-                //SIMULATION: UPDATE test_players location
-                //if (!Player.online_playerList.isEmpty()) {
-                    //for (Player test_player : Player.online_playerList) {
-                        //test_player.setLatitude(test_player.getLatitude() + test_step);
-                        //test_player.setLongitude(test_player.getLongitude() - test_step);
-                        //add here a if the player is still in the game, then because else it creates a new partial player thats bad.
-                        //mDatabase.update_player_loc_db(test_player, test_player.getLatitude()+ test_step, test_player.getLongitude()- test_step);
-                    //}
-                //}
-
-
-           // }
+            }
 
             @Override
             public void onError(String errorMsg) {
@@ -721,6 +654,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("MainActivity", "onDestroy called");
         Intent serviceIntent = new Intent(this, MyService.class);
         stopService(serviceIntent);
+        stop_cycling_fetching_location();
     }
 
 

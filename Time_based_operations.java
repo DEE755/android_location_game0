@@ -21,7 +21,7 @@ public class Time_based_operations
             public void run() {
                 // Code to execute every 5 seconds
                 updatePlayerLocation();
-
+               //fetchLocation();
                 // Re-post the runnable with a delay of 5 seconds
                 handler.postDelayed(this, 5000);
             }
@@ -32,6 +32,9 @@ public class Time_based_operations
     }
 
     public static void updatePlayerLocation() {
+        if (MyService.getClientPlayer() == null) {
+            return;
+        }
         // Your code to update the player location
         MainActivity.getmDatabase().update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 

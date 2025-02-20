@@ -150,7 +150,7 @@ public class Player {
     // Getters and setters for player properties
     // ...
 
-    // Static methods to interact with the playerMarkerMap
+    // Static methods to add a map marker for a player (key is the player's email, marker is the marker object)
     public static void addPlayerMarker(String key, Marker marker) {
         playerMarkerMap.put(key, marker);
     }
@@ -171,7 +171,7 @@ public class Player {
     }
 
 
-    public static Map getPlayerMarkerMap() {
+    public static Map<String, Marker> getPlayerMarkerMap() {
         return playerMarkerMap;
     }
 
@@ -197,6 +197,8 @@ public class Player {
     public void setPlayer_marker(Marker Player_marker) {
         this.Player_marker =Player_marker;
     }
+
+
 
 
     public Marker create_player_marker(MapView mapView, Player player) {
@@ -284,7 +286,7 @@ public class Player {
                     Player.this.email = email;
                     Player.this.PlayerKey = email.replace(".", "_");
                     Player.this.rank = playerfetched.rank;
-                    Player.this.is_on_map = playerfetched.is_on_map;
+                    //Player.this.is_on_map = playerfetched.is_on_map;
                     Player.this.ObjectDeliveredStatus = playerfetched.ObjectDeliveredStatus;
                     Player.this.list_of_objects_to_collect = playerfetched.list_of_objects_to_collect;
                     //Player.this.PlayerRefToMainDb = playerRef;
@@ -430,10 +432,10 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
         return ref_to_logo;
     }
 
-    public void setIs_on_map(boolean online_status){
-        this.is_on_map = online_status;
+    public void setIs_on_map(boolean is_on_map){
+        this.is_on_map = is_on_map;
     }
-    boolean getIs_on_map(){
+    public boolean  getIs_on_map(){
         return this.is_on_map;
     }
 

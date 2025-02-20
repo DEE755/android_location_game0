@@ -58,20 +58,20 @@ public class CameraHandler {
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             Log.d("CameraHandler", "Handling activity result");
 
-            int desiredWidth = 62;
-            int desiredHeight = 62;
+            int width = 100;
+            int height = 100;
 
             // Resize the bitmap to the desired dimensions
-            Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, desiredWidth, desiredHeight, true);
+            Bitmap resizedBitmap = Bitmap.createScaledBitmap(imageBitmap, width, height, true);
 
             // Create a circular bitmap
-            Bitmap circularBitmap = Bitmap.createBitmap(desiredWidth, desiredHeight, Bitmap.Config.ARGB_8888);
+            Bitmap circularBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(circularBitmap);
             Paint paint = new Paint();
             paint.setAntiAlias(true);
             paint.setShader(new BitmapShader(resizedBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
-            float radius = Math.min(desiredWidth, desiredHeight) / 2.0f;
-            canvas.drawCircle(desiredWidth / 2.0f, desiredHeight / 2.0f, radius, paint);
+            float radius = Math.min(width, height) / 2.0f;
+            canvas.drawCircle(width / 2.0f, height / 2.0f, radius, paint);
 
             return circularBitmap;
         } else {
