@@ -23,9 +23,6 @@ public class LeaderBoard extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup leaderboard,
                              Bundle savedInstanceState) {
-
-        //setContentView(R.layout.fragment_disconnect);
-        // Inflate the layout for this fragment
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.release();
@@ -36,7 +33,7 @@ public class LeaderBoard extends Fragment
 
         View view = inflater.inflate(R.layout.fragment_leaderboard, leaderboard, false);
         WebView table_web = view.findViewById(R.id.table_web);
-        //GridLayout gridLayout = view.findViewById(R.ids.grid);
+
 
         TextView textView = view.findViewById(R.id.rank_text);
         textView.setText("Rank: " + getClientPlayer().getRank());
@@ -45,10 +42,6 @@ public class LeaderBoard extends Fragment
 
         table_web.getSettings().setJavaScriptEnabled(true);
 
-
-
-        //gridLayout.setColumnCount(3);
-        //gridLayout.addView(new LeaderboardItem(getContext(), "1", "Player 1", "1000"));
 
         return view;
 

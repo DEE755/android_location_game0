@@ -13,11 +13,4 @@ public class AuthentificationActivity extends AppCompatActivity
         }
 
 
-
-
-
-    // Receive custom token from your backend
-    //String customToken
-
-
 }

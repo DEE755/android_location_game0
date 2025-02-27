@@ -27,15 +27,8 @@ public class MyService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        // Initialize your database and player here
-        //mDatabase = new Database("https://android-location-game0-default-rtdb.europe-west1.firebasedatabase.app");
-
-        //ClientPlayer = LogIn.getFetched_logged_in_player();
-
-
     }
 
-    //"Phone_owner(real_location_data)"
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -83,6 +76,7 @@ public class MyService extends Service {
             if (task.isSuccessful()) {
                 Log.d("Database", "Player removed successfully: " + player_to_remove.getPlayerKey());
                 database.removePlayerFromDatabase(player_to_remove.getPlayerKey());
+                
             } else {
                 Log.e("Database", "Failed to remove player: " + player_to_remove.getPlayerKey(), task.getException());
             }
@@ -94,12 +88,6 @@ public class MyService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
-    }
-
-
-    public void onStop() {
-        // Stop the service
-        stopSelf();
     }
 
 

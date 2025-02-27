@@ -35,16 +35,10 @@ public class Time_based_operations
         if (MyService.getClientPlayer() == null) {
             return;
         }
-        // Your code to update the player location
+
         MainActivity.getmDatabase().update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
     }
-
-
-
-
-
-
 
 }

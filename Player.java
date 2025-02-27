@@ -3,7 +3,9 @@ package com.example.myapplicationtest1;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.MediaPlayer;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
@@ -25,13 +27,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-
-
-
-
-
-
 
 
 
@@ -68,8 +63,6 @@ public class Player {
     public void setScore(int score) {
         this.score = score;
     }
-
-
 
 
 
@@ -111,49 +104,11 @@ public class Player {
     private  List<Marker> List_of_Objects_Markers;
 
 
-    public List<Marker> getList_of_Objects_Markers() {
-
-        return List_of_Objects_Markers;
-    }
-
-    public void setList_of_Objects_Markers(List<Marker> list_of_Objects_Markers) {
-        List_of_Objects_Markers = list_of_Objects_Markers;
-    }
 
 
-    //private DatabaseReference PlayerRefToMainDb;
 
-    //public DatabaseReference getPlayerRefToMainDb(){
-       /* return this.PlayerRefToMainDb;
-   */
-
-    /*public void setPlayerRefToMainDb(DatabaseReference playerRefToDb)
-    {this.PlayerRefToMainDb =playerRefToDb;}*/
-
-
-    //private DatabaseReference PlayerRefToOnlineDb;
-
-    /*public void setPlayerRefToOnlineDb(DatabaseReference playerRefToDb){
-        this.PlayerRefToOnlineDb = playerRefToDb;
-    }
-
-    public DatabaseReference getPlayerRefToOnlineDb(){
-        return this.PlayerRefToOnlineDb;
-    }*/
-
-    //A map to store the player's key and the corresponding marker
-    //it is way more efficient to store the markers in a map than in a list for searching purposes
-    //(PS: the word 'Map' isn't related to any geographic map it is a data structure in java, like a dictionary in python and nothing linked to a geographic map or any GIS thing)
-    // Static map to store player keys and their corresponding markers
     private static Map<String, Marker> playerMarkerMap = new HashMap<>();
 
-    // Getters and setters for player properties
-    // ...
-
-    // Static methods to add a map marker for a player (key is the player's email, marker is the marker object)
-    public static void addPlayerMarker(String key, Marker marker) {
-        playerMarkerMap.put(key, marker);
-    }
 
     private List<Object_to_collect> list_of_objects_to_collect;
 
@@ -175,13 +130,10 @@ public class Player {
         return playerMarkerMap;
     }
 
-    public static void removePlayerMarker(String key) {
-        playerMarkerMap.remove(key);
-    }
 
 
     //FOR TEST PURPOSE:
-    Marker Player_marker =null;
+    Marker Player_marker;
 
     private String PlayerKey;
 
@@ -220,19 +172,20 @@ public class Player {
                 this.getName() +
                         "Distance from me: " + distanceInMeters + " meters" + "\nScore: " + player.getScore() + "\nRank: " + player.getRank()
         );
-        //player_marker.setTitle(this.getName());
 
+        player_marker.setOnMarkerClickListener((marker, mapView1) -> {
+
+            MediaPlayer mediaPlayer = MediaPlayer.create(mapView1.getContext(), R.raw.button_click);
+            mediaPlayer.start();
+            // Display a toast message
+            Toast.makeText(mapView1.getContext(), "Player: " + this.getName() + "\nScore: " + this.getScore(), Toast.LENGTH_SHORT).show();
+            Messages messages = new Messages();
+            messages.input_message_and_send(MyService.getClientPlayer(), player, mapView1.getContext());
+            return true;
+        });
 
         //Profile pic logo HANDLING
         try{
-            //String logo_name =(player.name==null)? "default_logo":getRef_to_logo();
-           //player.name =(player.name==null)? "found_null":player.name;
-            //Log.d("crash", "logo_name: "+logo_name);
-
-            //if(logo_name=="phone_owner(real_location_data)_logo")
-            //{logo_name="harry_potter_logo";}
-
-           // logo_name="harry_potter_logo";
             Storage_Service storage = new Storage_Service(mapView.getContext());
             storage.getPlayerImageFromStorage(player, new OnSuccessListener<Bitmap>() {
                 @Override
@@ -244,9 +197,6 @@ public class Player {
                 }
             });
 
-            //int resourceId = mapView.getContext().getResources().getIdentifier(logo_name, "drawable", mapView.getContext().getPackageName());
-            //player_marker.setIcon(mapView.getContext().getResources().getDrawable(resourceId));
-            //Log.d("crash", "after logo handling: ");
         }
 
 
@@ -270,7 +220,7 @@ public class Player {
 
     // Constructors
 
-     Player(Database db, String email, DataFetchListener listener, Context context) {
+    Player(Database db, String email, DataFetchListener listener, Context context) {
         DatabaseReference playerRef = db.get_db_ref().child("all_players").child(email.replace(".", "_"));
         Storage_Service storage = new Storage_Service(context);
         playerRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -313,47 +263,30 @@ public class Player {
 
     public Player(){}
 
-Player(String email, String input_name, Bitmap profile_pic, Database db)
-{
-    this.email=email;
-    this.PlayerKey =email.replace(".", "_");
-    this.name=input_name;
-
-    this.profile_pic=profile_pic;
-    this.ref_to_logo ="player_pics/"+email.toLowerCase().replace(".", "_")+"_logo";
-
-    this.score = 0; // Default score is 0
-    this.rank=0;
-    this.is_on_map =false;
-    this.ObjectDeliveredStatus =false;
-    this.list_of_objects_to_collect =new ArrayList<>();
-    this.list_of_objects_to_collect.add( new Object_to_collect());
-
-    //this.PlayerRefToMainDb =null;
-    this.is_active=true;
-
-    player_counter++;
-    ref_to_logo =email.toLowerCase().replace(" ", "_")+"_logo";
-}
-
-    public Player(String name, double latitude, double longitude, String email, Database db) {
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.score = 0; // Default score is 0
+    Player(String email, String input_name, Bitmap profile_pic, Database db)
+    {
         this.email=email;
         this.PlayerKey =email.replace(".", "_");
+        this.name=input_name;
+
+        this.profile_pic=profile_pic;
+        this.ref_to_logo ="player_pics/"+email.toLowerCase().replace(".", "_")+"_logo";
+
+        this.score = 0; // Default score is 0
         this.rank=0;
         this.is_on_map =false;
         this.ObjectDeliveredStatus =false;
         this.list_of_objects_to_collect =new ArrayList<>();
-        //this.list_of_objects_to_collect.add( new Object_to_collect());
+        this.list_of_objects_to_collect.add( new Object_to_collect());
+
         //this.PlayerRefToMainDb =null;
         this.is_active=true;
+
         player_counter++;
         ref_to_logo =email.toLowerCase().replace(" ", "_")+"_logo";
-        //online_playerList.add(this);
     }
+
+
 
     // Getter and Setter for Name
     public String getName() {
@@ -443,10 +376,6 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
     {int distance, min_distance=Integer.MAX_VALUE;
         Object_to_collect closet_object = null;
         int i=0;
-        /*for(Map.Entry<String, Marker> entry : Object_to_collect.getObject_marker_map().entrySet() ){
-            distance=DistanceCalculator.calculateDistance(getMyCurrentGeoPoint(), entry.getValue().getPosition());
-    Log.d("distance", distance+ entry.getValue().getTitle() + "iteration" +i++);*/
-
         for(Object_to_collect object : this.getList_of_objects_to_collect()){
             distance= Location_utils.DistanceCalculator.calculateDistance(new GeoPoint(this.getLatitude(),this.getLongitude()), object.getObjectMarker().getPosition());
             if (distance<min_distance)
@@ -458,37 +387,5 @@ Player(String email, String input_name, Bitmap profile_pic, Database db)
         Log.d("min_distance","min dist"+ min_distance+ "min_marker" +closet_object.getObjectMarker());
         return closet_object;
     }
-
-    public void send_dead_man_check(Database db, Global_Utilities.Iterator iteration )
-    {
-
-        Runnable task = new Runnable() {
-            @Override
-            public void run() {
-
-                // Update the object
-                switch (iteration.increase()%2) {
-                    case 0:
-                        db.get_db_ref().child("online_players").child(getPlayerKey()).child("is_active").setValue(false);
-                        Log.d("Player", "triggered false" + iteration.getIterator_nb());
-
-                        break;
-                    case 1:
-                        db.get_db_ref().child("online_players").child(getPlayerKey()).child("is_active").setValue(true);
-                        Log.d("Player" , "triggered true "+ iteration.getIterator_nb());
-
-                        break;
-                }
-            }
-        };
-
-        // Schedule the task to run every 5 seconds
-        scheduler.scheduleWithFixedDelay(task, 0, 5, TimeUnit.SECONDS);
-    }
-
-    public void stopPeriodicUpdate() {
-        scheduler.shutdown();
-    }
-
 
 }

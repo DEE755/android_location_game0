@@ -30,7 +30,7 @@ public class Sound {
     }
 
 
-    static public class ToneGenerator {
+    static public class ToneGenerator {//creates various sounds for the game
 
 
         public static void toneGenerator(float startFreq, float endFreq, int nbOfSeconds) {
@@ -81,9 +81,5 @@ public class Sound {
                 audioTrack.release();
             }).start();
         }
-
-
     }
-
-
 }

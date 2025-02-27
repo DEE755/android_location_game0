@@ -133,14 +133,14 @@ public class LogIn extends AppCompatActivity {
             // Display a Toast message
             Toast.makeText(getApplicationContext(), "Hello " + currentUser.getEmail(), Toast.LENGTH_LONG).show();
 
-            //TODO: SHOW PLEASE WAIT WHILE FETCHING PLAYER DATA SCREEN
 
-            //Player fetch_player_data(currentUser.getEmail());
 
             //THE PLAYER EXIST SO WE FETCH IT FROM DB:
             fetched_logged_in_player = new Player(m_database, currentUser.getEmail(), new Player.DataFetchListener() {
                 @Override
                 public void onDataFetched(Player player) {
+                    //deleting from online player in case it is there by mistake:
+                    MyService.onQuitApp(player, m_database);
 
                     //MyService.setClientPlayer(new Player(MainActivity.getmDatabase(), currentUser.getEmail()));
                     Log.d("usert", "user is logged in as :" + name + " with email: " + email);
@@ -152,8 +152,10 @@ public class LogIn extends AppCompatActivity {
                     //Finish Loading with fetching the image from storage
                     loadingBar.setProgress(86);
                     waiting_text.setText("Fetching profile picture");
-                    Storage_Service storage=new Storage_Service(LogIn.this);
 
+
+
+                    Storage_Service storage=new Storage_Service(LogIn.this);
                     storage.getPlayerImageFromStorage(player, new OnSuccessListener<Bitmap>() {
                         @Override
                         public void onSuccess(Bitmap fetched_image) {

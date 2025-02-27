@@ -22,7 +22,7 @@ private Handler handler;
         super.onCreate(savedInstanceState);
 
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Plese wait...");
+            getSupportActionBar().setTitle("Please wait...");
         }
 
 

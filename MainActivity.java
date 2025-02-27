@@ -51,7 +51,6 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 import android.content.Context;
 import android.preference.PreferenceManager;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.text.SimpleDateFormat;
@@ -67,10 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final org.apache.commons.logging.Log log = LogFactory.getLog(MainActivity.class);
     private static boolean PlayerExistedBefore;
-
-    public static boolean getPlayerExistedBefore() {
-        return PlayerExistedBefore;
-    }
 
     public static void setPlayerExistedBefore(boolean existedBefore) {
         MainActivity.PlayerExistedBefore = existedBefore;
@@ -101,39 +96,25 @@ public class MainActivity extends AppCompatActivity {
         void onError(String errorMsg);
     }
 
-    //callback for results from server:
-    public interface ValueCallback<T> {
-        void onValueReceived(T value);
-    }
-
 
     private ActivityMainBinding binding;
     private FusedLocationProviderClient fusedLocationClient;
-
-    // Member variables to store local latitude and longitude
-
 
 
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
-    private final int REQUEST_PERMISSIONS_REQUEST_CODE = 1;
     private Button MainButton;
 
     private TextView Score_label;
 
     private MediaPlayer mediaPlayer;
 
-
     private MapView mapview =null;
 
-    public MapView getMapview() {
-        return mapview;
-    }
-    private IMapController MapController;
 
 
-    private boolean MarkersCreatedFlag =false;
+    private boolean game_started_flag =false;
     private boolean GameStartedFlag =false;
 
 
@@ -152,26 +133,14 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
     protected BottomNavigationView navView;
 
-    public BottomNavigationView getNavView() {
-        return navView;
-    }
-
-    void setNavView(BottomNavigationView navView) {
-        this.navView = navView;
-    }
 
     protected AppBarConfiguration appBarConfiguration;
 
-    public AppBarConfiguration getAppBarConfiguration() {
-        return appBarConfiguration;
-    }
 
-    void setAppBarConfiguration(AppBarConfiguration appBarConfiguration) {
-        this.appBarConfiguration = appBarConfiguration;
-    }
+    public static boolean new_message_flag;
+
 
     //fragments:
     FragmentManager fragmentManager;
@@ -179,17 +148,38 @@ public class MainActivity extends AppCompatActivity {
     LeaderBoard leaderboardFragment;
     FrameLayout fragmentContainer;
 
-
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable runnable;
     private final int interval = 2000; // Interval in milliseconds (e.g., 5000ms = 5 seconds)
 
-    private void start_cycling_fetching_location() {
+    private void start_executing_time_operations() {
+        //includes fetching location of other player and updating the player location
+        //includes checking new messages and toast them
         runnable = new Runnable() {
             @Override
             public void run() {
                 // Code to execute every x seconds
                 fetchLocation();
+                if (Messages.last_message!=null && new_message_flag)
+                {
+                    Toast.makeText(MainActivity.this, "You got a new message: " + Messages.last_message, Toast.LENGTH_LONG).show();
+                    
+                    //TODO REPLACE WITH SOUND MESSAGE
+                    MediaPlayer mediaPlayer = MediaPlayer.create(MainActivity.this, R.raw.sound_bonus2);
+                    mediaPlayer.start();
+                    new_message_flag=false;
+
+
+                }
+                //TODO check this next line again
+                if (MyService.getClientPlayer().getIs_on_map())
+                {
+                    mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(), getUserLongitude());
+                }
+                //update distance from bus:
+                updateMarkerDistances();
+
+
                 // Re-post the runnable with a delay of x seconds
                 handler.postDelayed(this, interval);
             }
@@ -197,16 +187,15 @@ public class MainActivity extends AppCompatActivity {
         handler.post(runnable);
     }
 
+
+
     private void stop_cycling_fetching_location() {
         handler.removeCallbacks(runnable);
     }
 
 
 
-    //private FirebaseAnalytics mFirebaseAnalytics;
-
-
-    private void show_current_position(double zoom_factor, Long speed){//both displays and output it
+     public void show_current_position(double zoom_factor, Long speed, Bitmap pic){//both displays and output it
 
 
         MyLocationNewOverlay myLocationOverlay = new MyLocationNewOverlay(new GpsMyLocationProvider(this), mapview);
@@ -214,12 +203,10 @@ public class MainActivity extends AppCompatActivity {
 // Enable the MyLocation overlay
         myLocationOverlay.enableMyLocation();
 
-// Optionally, enable following the user's location
+// enable following the user's location
         myLocationOverlay.enableFollowLocation();
 
-        //change_icon:
-        //Drawable customIcon = getResources().getDrawable(R.drawable.bus_small, null);
-        //Bitmap userIconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.user_logo_png2);
+
         try {
             Bitmap userIconBitmap = MyService.getClientPlayer().getProfile_pic();
             if (userIconBitmap != null) {
@@ -231,13 +218,11 @@ public class MainActivity extends AppCompatActivity {
             Log.e("error", String.valueOf(e));
         }
 
-        //myLocationOverlay.setPersonIcon();
 // Add the overlay to the map
         mapview.getOverlays().add(myLocationOverlay);
 
 // Set the map controller to zoom and animate to the user's location when it's obtained
         IMapController mapController = mapview.getController();
-        //mapController.setZoom(zoom_factor);
 
         mapController.animateTo(new GeoPoint(getUserLatitude(), getUserLongitude()), zoom_factor, speed);
 
@@ -256,15 +241,11 @@ public class MainActivity extends AppCompatActivity {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
 
-
         // Initialize UI components
         MainButton = findViewById(R.id.MainButton);
         Score_label = findViewById(R.id.Score_Label);
         Score_label.setText(MyService.getClientPlayer().getName()+ "-Score: 0");
         Score_label.setBackgroundColor(Color.BLUE);
-
-
-
 
 
         // Setup Bottom Navigation
@@ -273,7 +254,6 @@ public class MainActivity extends AppCompatActivity {
                 R.id.navigation_game, R.id.navigation_login, R.id.navigation_leaderboards)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
-        //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
 
@@ -282,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
         MainButton.setText("Fetching Location...");
 
 
-         //navView = findViewById(R.id.nav_view);
         navView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -342,7 +321,6 @@ public class MainActivity extends AppCompatActivity {
                 }
 
 
-
                 return false;
             }
 
@@ -352,65 +330,39 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        //start listening for new messages
+        Messages msg_init=new Messages();
+        msg_init.start_listening_for_messages();
+
+
         // Handle button click
         MainButton.setOnClickListener(v -> {
 
-
-            //Utilities initialization:
-            // Inside onCreate method
-            //Global_Utilities utilities = new Global_Utilities();
-            //Global_Utilities.Iterator iteration = new Global_Utilities.Iterator();
-
-                //Sound.ToneGenerator Tonegen=new Sound.ToneGenerator();
+            //set handler for delayed actions
                 Handler handler = new Handler(Looper.getMainLooper());
 
-                //Tonegen.toneGenerator(200,4000,(int)zoom_speed/1000);
-                //String locationText = "Latitude: " + userLatitude + "\nLongitude: " + userLongitude;
-
                 if(GameStartedFlag==false) {
-                    show_current_position(15.0, 1000L);
+                    show_current_position(15.0, 1000L,null);
                     Sound.ToneGenerator.toneGenerator(400, 4000, (int) zoom_speed / 1000);
                     GameStartedFlag=true;
                     // Reset button text after 4 seconds
                     MainButton.setText("GAME STARTING");
                     Toast.makeText(this,"Your items are being fetch, please wait", Toast.LENGTH_LONG).show();
 
-
-                    //ACTUAL LOCAL PLAYER:
-                    //first loc is sent to the server after pressing the start button then updated here
-
                     MyService.getClientPlayer().setLatitude(getUserLatitude());
                     MyService.getClientPlayer().setLongitude(getUserLongitude());
-                    Log.d("Client_Player", "Client player: " + MyService.getClientPlayer());
 
                     // Adding the client_player to the game db
-
                         Player clientPlayer0 = MyService.getClientPlayer();
 
-                        Log.d("ClientPPlayer", "Client player: " + clientPlayer0);
                         if (clientPlayer0 != null) {
-                            if(PlayerExistedBefore==false){
+                            if(!PlayerExistedBefore){
                                 Log.d("ClientPlayer", "Client player: " + "Player didnt existed before" + PlayerExistedBefore);
                                 mDatabase.addPlayerIfNotExists(clientPlayer0);
                             }
                             mDatabase.add_player_to_online_db(clientPlayer0, mapview);
                             Score_label.setText(clientPlayer0.getName()+ "- Score: " + MyService.getClientPlayer().getScore());
-
-                            //Time_based_operations.updatePlayerLocation();
-
-
                         }
-
-
-                    //update the test players marker:
-
-                    //client_player.setPlayerref_to_db(mDatabase.get_db_ref().child("online_players").child(client_player.getPlayer_key()));
-
-
-                    //TODO: we probably need a listener or a flag to check that the list of objects from the server is ready when this line happens
-                    //fetch objects locations for the client player
-                    //replaced by listener actions
-                    //client_player.fetchObjectsToCollect(mDatabase);
 
 
                     handler.postDelayed(() -> MainButton.setText("CATCH ITEMS"), 2000);
@@ -418,15 +370,11 @@ public class MainActivity extends AppCompatActivity {
 
                 else {
 
-                    //update distance from bus:
-                    updateMarkerDistances();
 
                     Object_to_collect closest_item=MyService.getClientPlayer().closest_Object_to_collect();
                     int distance=Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint());
                     Log.d("distance", String.valueOf(closest_item.getObjectMarker().getPosition()));
                     if (distance <= 12){
-                        //all the actions that happen when the player catches an item englobe later:
-                        //Global_Utilities.Success_catch()
 
                         MainButton.setText("CONGRATS\n +100POINTS");
                         Sound.ToneGenerator.toneGenerator(4000, 500, (int) zoom_speed / 1000);
@@ -440,73 +388,59 @@ public class MainActivity extends AppCompatActivity {
 
                         //set logo to validation color
                         closest_item.getObjectMarker().setIcon(mapview.getContext().getResources().getDrawable(R.drawable.bus_logo));
-
+                        //remove the taken object from the list
                         MyService.getClientPlayer().getList_of_objects_to_collect().remove(closest_item);
 
                         Score_label.setText("Score: " + MyService.getClientPlayer().getScore());
 
-                        //ADD A FLAG TO ALREADY_TAKEN or remove from db
-//TODO either add on the object + update full object or add on db the increase of score
-                        //TODO TODO: PREVENT THE SAME ITEM TO BE TAKEN MORE THEN ONE TIME ADD A FLAG
-//READY FOR NEW CATCH: UPDATE UI
                         handler.postDelayed(() -> MainButton.setText("CATCH MORE ITEMS"), 2000);
-//TODO UPDATE UI SCORE
-                    } else {
+                    }
+                    else {
                         MainButton.setText("NO ITEM HERE");
                         Sound.ToneGenerator.toneGenerator(800, 500, (int) zoom_speed / 1000);
                         handler.postDelayed(() -> MainButton.setText("CATCH ITEMS"), 2000);
-                        Log.d("distance" , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint())));
+                        Log.d("distance to closest obj: " , String.valueOf(Location_utils.DistanceCalculator.calculateDistance(closest_item.getObjectMarker().getPosition(), Location_utils.getMyCurrentGeoPoint())));
                     }
 
                 }
 
-                //ANALYTICS:
-            //mFirebaseAnalytics.logEvent("button_clickj", null);
         });
-
-
 
         // Check and request location permissions
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+
             // Request the permission
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     LOCATION_PERMISSION_REQUEST_CODE);
         } else {
             Log.d("MainAcctivity", "Location permission already granted");
-            // Permission already granted, proceed with getting location
-            //fetchLocation();
-            start_cycling_fetching_location();
+
+            //operations that repeat every x seconds
+            start_executing_time_operations();
         }
 
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
         //inflate and create the map
-        //setContentView(R.layout.activity_main);// makes crashing
-        Log.d("MainActivity", "creating map view");
         mapview = findViewById(R.id.map);
         mapview.setTileSource(TileSourceFactory.MAPNIK);
-        Log.d("MainActivity", " map view created");
 
+        show_current_position(9.0,1000L,null);
 
-
-        show_current_position(9.0,1000L);
-
-    //MainButton.callOnClick();
         Button Quit_button=findViewById(R.id.quit_button);
         Quit_button.setBackgroundColor(Color.RED);
 
         Quit_button.setOnClickListener(v -> {
-
             MyService.onQuitApp(MyService.getClientPlayer(),mDatabase);
             finish();
         });
 
+        //start listening for new online players
         mDatabase.listenForNewOnlinePlayers(mapview,MyService.getClientPlayer());
 
     }//oncreateend
-
 
     @Override
     protected void onPause() {//NEVER CALLED
@@ -537,30 +471,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onLocationResult(LocationData locationData) {
                 setUserLatitude(locationData.getLatitude());
-                Log.d("MainsActivity", "Latitude: " + getUserLatitude());
                 setUserLongitude(locationData.getLongitude());
                 MyService.getClientPlayer().setLatitude(getUserLatitude());
                 MyService.getClientPlayer().setLongitude(getUserLongitude());
-                Log.d("tracking", "Latitude: " + getUserLatitude() + "Longitude:" + getUserLongitude());
-                //mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(),getUserLongitude());
 
 
-                if (MarkersCreatedFlag == false) {
+                if (!game_started_flag) {
                     MainButton.setText("START GAME");
                     MainButton.setEnabled(true);
                     MainButton.setBackgroundColor(Color.GREEN);
+                    game_started_flag = true;
 
-                    InputStream inputStream = getResources().openRawResource(R.raw.bus_holon_en); // Place CSV in res/raw folder
-
-
-                    //The players are fetch from the DB to a java_player object
-                    //This is a bit complicated to understand: ASYNCHRONOUS BEHAVIOR CALLBACKS
-                    //we pass the mapview to be able to create the markers
-
-                    //put all Players in the list online_playerList
-                    //the list_online_playerList is reconstituted every time some of the data changes in the database
-
-                    MarkersCreatedFlag = true;
                 } else {
 
                     if (MyService.getClientPlayer().getIs_on_map())
@@ -568,12 +489,9 @@ public class MainActivity extends AppCompatActivity {
                         mDatabase.update_player_loc_db(MyService.getClientPlayer(), getUserLatitude(), getUserLongitude());
                     }
 
-
-                    //Location_utils.updatePlayersMarkers();
-
+                    //Update the map view
                     mapview.invalidate();
                 }
-
 
             }
 
@@ -582,16 +500,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Location", errorMsg);
                 Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
 
-
             }
         });
     }
 
-
-
-
-
-    // Method to get current location : USELESS SINCE AUTOMATIC WITH OSM (just get the numbers out)
     double lat;
     double lng;
     private void getCurrentLocation(MyLocationCallback callback) {
@@ -643,7 +555,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -656,6 +567,5 @@ public class MainActivity extends AppCompatActivity {
         stopService(serviceIntent);
         stop_cycling_fetching_location();
     }
-
 
 }

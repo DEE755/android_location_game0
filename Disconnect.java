@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,10 +29,12 @@ public class Disconnect extends AppCompatActivity {
 
 
 
-
         Button disconnectButton = findViewById(R.id.disconnect_button);
         Button returnButton= findViewById(R.id.return_to_game_button);
+
+        //Button for future upgrades on the app
         Button ChangePic= findViewById(R.id.change_profile_pic_button);
+        ChangePic.setVisibility(View.INVISIBLE);
 
         TextView logStatusTextView = findViewById(R.id.log_status_text_view);
 
@@ -39,7 +42,7 @@ public class Disconnect extends AppCompatActivity {
 
         disconnectButton.setOnClickListener(v -> signOutUser());
         returnButton.setOnClickListener(v -> return_to_game());
-        ChangePic.setOnClickListener(v -> change_profile_pic());
+        //ChangePic.setOnClickListener(v -> change_profile_pic());
 
     }
 
@@ -57,12 +60,12 @@ public class Disconnect extends AppCompatActivity {
         finish();
     }
 
-private void change_profile_pic()
+/*private void change_profile_pic()
 {
     CameraHandler cam_handler=new CameraHandler(Disconnect.this);
     cam_handler.takePicture(Disconnect.this);
 
-}
+}*/
 
 }
 

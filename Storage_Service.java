@@ -21,7 +21,6 @@ import java.util.concurrent.Executors;
 
 import com.bumptech.glide.Glide;
 
-// Storage_Service.java
 public class Storage_Service {
         private static final String TAG = "StorageService";
 
